@@ -1,0 +1,1036 @@
+delimiter $ ( ~ $ $ ) $;
+strict provable sort wff;
+term im (ph ps: wff): wff; infixr im: $->$ prec 25;
+term not (ph: wff): wff; prefix not: $~$ prec 41;
+term tru: wff; prefix tru: $T.$ prec max;
+
+-- Axioms
+axiom ax_1 (ph ps: wff): $ ph -> ps -> ph $;
+axiom ax_2 (ph ps ch: wff): $ (ph -> ps -> ch) -> (ph -> ps) -> ph -> ch $;
+axiom ax_3 (ph ps: wff): $ (~ph -> ~ps) -> ps -> ph $;
+axiom ax_mp (ph ps: wff): $ ph $ > $ ph -> ps $ > $ ps $;
+axiom ax_tru: $ T. $;
+
+-- Theorems used by the tactics
+pub theorem a1i (ph ps: wff) (h: $ ph $): $ ps -> ph $= '(ax_mp h ax_1);
+pub theorem a2i (ph ps ch: wff) (h: $ ph -> ps -> ch $): $ (ph -> ps) -> ph -> ch $ = '(ax_mp h ax_2);
+pub theorem mpd (ph ps ch: wff) (h1: $ ph -> ps $) (h2: $ ph -> ps -> ch $): $ ph -> ch $ = '(ax_mp h1 (ax_mp h2 ax_2));
+pub theorem id (ph: wff): $ ph -> ph $ = '(mpd (! ax_1 _ ph) ax_1);
+pub theorem idd (ph ps: wff): $ ph -> ps -> ps $ = '(a1i id);
+pub theorem syl (ph ps ch: wff) (h1: $ ps -> ch $) (h2: $ ph -> ps $): $ ph -> ch $ = '(mpd h2 (a1i h1));
+pub theorem a1d (ph ps ch: wff) (h: $ ph -> ps $): $ ph -> ch -> ps $ = '(syl ax_1 h);
+pub theorem syld (ph ps ch th: wff) (h1: $ ph -> ch -> th $) (h2: $ ph -> ps -> ch $): $ ph -> ps -> th $ = '(mpd h2 (syl (syl ax_2 ax_1) h1));
+pub theorem a2d (ph ps ch th: wff) (h: $ ph -> ps -> ch -> th $): $ ph -> (ps -> ch) -> ps -> th $ = '(syl ax_2 h);
+pub theorem com12 (ph ps ch: wff) (h: $ ph -> ps -> ch $): $ ps -> ph -> ch $ = '(syl (a2i h) ax_1);
+pub theorem mpcom (ph ps: wff): $ ph -> (ph -> ps) -> ps $ = '(com12 id);
+pub theorem imidm (ph ps: wff): $ (ph -> ph -> ps) -> ph -> ps $ = '(a2i mpcom);
+pub theorem imim2 (ph ps ch: wff): $ (ps -> ch) -> (ph -> ps) -> ph -> ch $ = '(a2d ax_1);
+pub theorem com23 (ph ps ch th: wff) (h: $ ph -> ps -> ch -> th $): $ ph -> ch -> ps -> th $= '(syl (com12 (syl imim2 mpcom)) h);
+pub theorem con1 (ph ps: wff): $ (~ph -> ps) -> (~ps -> ph) $=
+'(syl ax_3 (ax_mp (ax_mp (syl (ax_mp (! imidm ph ph) (syl (a2i ax_3) (a1i (a1i (! id ph))))) (syl ax_3 ax_1)) ax_3) imim2));
+pub theorem con2 (ph ps: wff): $ (ph -> ~ps) -> (ps -> ~ph) $= '(syl ax_3 (com12 (syl (com12 id) (ax_mp id con1))));
+pub theorem notnot (ph: wff): $ ph -> ~~ph $= '(ax_mp id con2);
+pub theorem notnoti (ph: wff) (h: $ ph $): $ ~~ph $= '(ax_mp h notnot);
+pub theorem notnotr (ph: wff): $ ~~ph -> ph $= '(ax_mp id con1);
+pub theorem notnotd (ph ps: wff) (h: $ ph -> ps $): $ ph -> ~~ps $= '(syl notnot h);
+pub theorem con3 (ph ps: wff): $ (ph -> ps) -> (~ps -> ~ph) $= '(syl con1 (com12 (syl mpcom notnotr)));
+pub theorem pm2_24 (ph ps: wff): $ ph -> ~ph -> ps $= '(syl con1 ax_1);
+pub theorem pm2_21 (ph ps: wff): $ ~ph -> ph -> ps $= '(com12 pm2_24);
+pub theorem pm2_21d (ph ps ch: wff) (h: $ ph -> ~ps $): $ ph -> ps -> ch $= '(syl ax_3 (com12 (a1i h)));
+pub theorem split (ph ps: wff) (h1: $ ph $) (h2: $ ps $): $ ~(ph -> ~ps) $= '(ax_mp h2 (ax_mp (syl (mpd (a1i h1) id) notnotr) ax_3));
+pub theorem splitn (ph ps: wff) (h1: $ ph $) (h2: $ ~ps $): $ ~(ph -> ps) $= '(ax_mp h2 (ax_mp (syl (mpd (a1i h1) id) (syl (syld (a1i notnot) id) notnotr)) ax_3));
+pub theorem jcnd (ph ps ch: wff) (h1: $ ph -> ps $) (h2: $ ph -> ~ch $): $ ph -> ~(ps -> ch) $= '(mpd h1 (syl (com12 (mpd mpcom (a1i con3))) h2));
+pub theorem ja (ph ps ch: wff) (h1: $ ~ch -> ph $) (h2: $ ps -> ph $): $ (ch -> ps) -> ph $= '(ax_mp (jcnd (ax_mp h1 con1) (ax_mp h2 con3)) ax_3);
+pub theorem expi (ph ps ch: wff) (h: $ ~(ph -> ~ps) -> ch $): $ ph -> ps -> ch $= '(syld (a1i h) (syld (syl con2 mpcom) idd));
+pub theorem expn (ph ps ch: wff) (h: $ ~(ph -> ps) -> ch $): $ ph -> ~ps -> ch $= '(syld (a1i h) (syld (syl con3 mpcom) idd));
+pub theorem jad (ph ps ch th: wff) (h1: $ ph -> ~ps -> th $) (h2: $ ph -> ch -> th $): $ ph -> (ps -> ch) -> th $= '(com12 (ja (com12 h1) (com12 h2)));
+pub theorem notnotrdd (ph ps: wff) (h: $ ph -> ps $): $ ~~ph -> ps $= '(syl h notnotr);
+pub theorem notnotrddd (ph ps ch: wff) (h: $ ph -> ps -> ch $): $ ph -> ~~ps -> ch $= '(syl con1 (syl con3 h));
+pub theorem impneg (ph ps ch: wff) (h: $ ph -> ~ps -> ch $): $ ~(ph -> ps) -> ch $= '(ax_mp (com12 (mpd h (a1i con1))) con1);
+pub theorem impnegd (ph ps ch th: wff) (h: $ ph -> ps -> ~ch -> th $): $ ph -> ~(ps -> ch) -> th $= '(com12 (impneg (com23 (com12 h))));
+
+-- Definitions
+def an (ph ps: wff): wff = $ ~(ph -> ~ps) $;
+infixl an: $/\$ prec 34;
+
+def iff (ph ps: wff): wff = $ ~((ph -> ps) -> ~(ps -> ph)) $;
+infixl iff: $<->$ prec 20;
+
+def or (ph ps: wff): wff = $ ~ph -> ps $;
+infixl or: $\/$ prec 30;
+
+def ifp (ph ps ch: wff): wff = $ ~~(ph -> ~ps) -> ~(~ph -> ~ch) $;
+
+def nan (ph ps: wff): wff = $ ~~(ph -> ~ps) $;
+infixl nan: $-/\$ prec 38;
+
+def xor (ph ps: wff): wff = $ ~~((ph -> ps) -> ~(ps -> ph)) $;
+infixl xor: $\/_$ prec 22;
+
+def nor (ph ps: wff): wff = $ ~(~ph -> ps) $;
+infixl nor: $-\/$ prec 36;
+
+def fal: wff = $ ~T. $;
+prefix fal: $F.$ prec max;
+
+def had (ph ps ch: wff): wff = $ ~~((~~((ph -> ps) -> ~(ps -> ph)) -> ch) -> ~(ch -> ~~((ph -> ps) -> ~(ps -> ph)))) $;
+def cad (ph ps ch: wff): wff = $ ~(~~(ph -> ~ps) -> ~(ph -> ~ch)) -> ~(ps -> ~ch) $;
+
+-- Primitive symbols of predicate logic
+pure sort set;
+term al {x: set} (ph: wff x): wff; prefix al: $A.$ prec 41;
+term eq (a b: set): wff; infixl eq: $=s$ prec 50;
+
+--- Tactics for tauto ---
+
+do {
+-- Find antecendents that prove the goal
+(def (check_middle refine t)
+  (match t
+    [ $ ,x -> ~,y -> ,y -> ,z $  (refine t '(a1i pm2_21))]
+    [ $ ,x -> ,y -> ~,y -> ,z $  (refine t '(a1i pm2_24))]
+    [ $ ,x -> ,y -> ,z -> ,w $   (refine t '(com23 (expi ,(fn (refine t) (check_middle refine t)))))]
+    [ $ ,x -> ,y -> ,y $         (refine t 'idd)]
+    [ _  (refine t '(a1d ,(fn (refine t) (unfold1 refine t))))]))
+
+-- Base case for searching antecedents that prove the goal
+(def (check_first refine t)
+  (match t
+    [ $ ,x -> ,y -> ,x $   (refine t 'ax_1)]
+    [ $ ,x -> ,y -> ,y $   (refine t 'idd)]
+    [ $ ~,x -> ,x -> ,y $  (refine t 'pm2_21)]
+    [ $ ,x -> ~,x -> ,y $  (refine t 'pm2_24)]
+    [ _  (refine t check_middle)]))
+
+-- Bring statements into implicational normal form
+(def (unfold1 refine t)
+  (match t
+    [ $ ~(,x -> ~,y) -> ,z $  (refine t '(impneg (notnotrddd ,(fn (refine t) (unfold refine t)))))]
+    [ $ ~(,x -> ,y) -> ,z $   (refine t '(impneg ,(fn (refine t) (unfold refine t))))]
+    [ $ ,x -> ,y -> ,z $      (refine t check_first)]
+    [ _  (error "Statement not provable")]))
+
+-- Bring statements into implicational normal form, eliminate truth constants
+(def (unfold refine t)
+  (match t
+    [ $ ~(,x -> T.) -> ,z $   (refine t '(impneg (a1i (ax_mp (a1i ax_tru) con1))))]
+    [ $ ~(,x -> ~T.) -> ,z $  (refine t '(impneg (a1d ,(fn (refine t) (unfold refine t)))))]
+    [ $ ~(,x -> ~,y) -> ,z $  (refine t '(impneg (notnotrddd ,(fn (refine t) (unfold refine t)))))]
+    [ $ ~(,x -> ,y) -> ,z $   (refine t '(impneg ,(fn (refine t) (unfold refine t))))]
+    [ $ ~T. -> ,x $           (refine t '(ax_mp (a1i ax_tru) con1))]
+    [ $ T. -> ,x $            (refine t '(a1i ,(fn (refine t) (unfold refine t))))]
+    [ $ ,x -> ,x $            (refine t 'id)]
+    [ $ ,x -> ,y -> ,z $      (refine t check_first)]
+    [ _  (error "Statement not provable")]))
+
+-- Split the conclusion
+(def (conclusion refine t)
+  (match t
+    [ $ ,x -> ~~,y $         (refine t '(notnotd ,(fn (refine t) (conclusion refine t))))]
+    [ $ ,x -> ~(,y -> ,z) $  (refine t '(jcnd ,(fn (refine t) (conclusion refine t)) ,(fn (refine t) (conclusion refine t))))]
+    [ $ ,x -> ,y -> ,z $     (refine t middle_antecedent)]
+    [ $ T. $                 (refine t 'ax_tru)]
+    [ $ ,x -> T. $           (refine t '(a1i ax_tru))]
+    [ _  (refine t unfold)]))
+
+-- Split the remaining antecendents
+(def (middle_antecedent refine t)
+  (match t
+    [ $ ,x -> ~(,y -> ,z) -> ,w $  (refine t '(impnegd ,(fn (refine t) (middle_antecedent refine t))))]
+    [ $ ,x -> ~~,y -> ,z $         (refine t '(notnotrddd ,(fn (refine t) (middle_antecedent refine t))))]
+    [ $ ,x -> (,y -> ,z) -> ,w $   (refine t '(jad ,(fn (refine t) (middle_antecedent refine t)) ,(fn (refine t) (middle_antecedent refine t))))]
+    [ $ ,x -> ~,y -> ,z $          (refine t '(expn ,(fn (refine t) (middle_antecedent refine t))))]
+    [ $ ,x -> ,y -> ,z $           (refine t '(expi ,(fn (refine t) (middle_antecedent refine t))))]
+    [ _  (refine t conclusion)]))
+
+-- Split the first antecedent
+(def (antecedent refine t)
+  (match t
+    [ $ ~(,x -> ,y) -> ,z $  (refine t '(impneg ,(fn (refine t) (antecedent refine t))))]
+    [ $ ~~,x -> ,y $         (refine t '(notnotrdd ,(fn (refine t) (antecedent refine t))))]
+    [ $ (,x -> ,y) -> ,z $   (refine t '(ja ,(fn (refine t) (antecedent refine t)) ,(fn (refine t) (antecedent refine t))))]
+    [ _  (refine t middle_antecedent)]))
+
+-- Split conjunctions at the top level
+(def (start refine t)
+  (match t
+    [ $ ~~,x $          (refine t '(notnoti ,(fn (refine t) (start refine t))))]
+    [ $ ~(,x -> ~,y) $  (refine t '(split ,(fn (refine t) (start refine t)) ,(fn (refine t) (start refine t))))]
+    [ $ ~(,x -> ,y) $   (refine t '(splitn ,(fn (refine t) (start refine t)) ,(fn (refine t) (start refine t))))]
+    [ _  (refine t antecedent)]))
+
+-- Translate terms into primitive symbols.
+(def (trans t)
+  (match t
+    [ $ ,a -> ,b $     (let ([x (trans ,a)] [y (trans ,b)]) $ ,x -> ,y $)]
+    [ $ ,a /\ ,b $     (let ([x (trans ,a)] [y (trans ,b)]) $ ~(,x -> ~,y) $)]
+    [ $ ~,a $          (let ([x (trans ,a)]) $ ~,x $)]
+    [ $ ,a <-> ,b $    (let ([x (trans ,a)] [y (trans ,b)]) $ ~((,x -> ,y) -> ~(,y -> ,x)) $)]
+    [ $ ,a \/ ,b $     (let ([x (trans ,a)] [y (trans ,b)]) $ ~,x -> ,y $)]
+    [ $ ,a -/\ ,b $    (let ([x (trans ,a)] [y (trans ,b)]) $ ~~(,x -> ~,y) $)]
+    [ $ F. $ $ ~T. $]
+    [ $ ,a \/_ ,b $    (let ([x (trans ,a)] [y (trans ,b)]) $ ~~((,x -> ,y) -> ~(,y -> ,x)) $)]
+    [ $ ,a -\/ ,b $    (let ([x (trans ,a)] [y (trans ,b)]) $ ~(~,x -> ,y) $)]
+    [ $ ifp ,a ,b ,c $ (let ([x (trans ,a)] [y (trans ,b)] [z (trans ,c)]) $ ~~(,x -> ~,y) -> ~(~,x -> ~,z) $)]
+    [ $ had ,a ,b ,c $ (let ([x (trans ,a)] [y (trans ,b)] [z (trans ,c)]) $ ~~((~~((,x -> ,y) -> ~(,y -> ,x)) -> ,z) -> ~(,z -> ~~((,x -> ,y) -> ~(,y -> ,x)))) $)]
+    [ $ cad ,a ,b ,c $ (let ([x (trans ,a)] [y (trans ,b)] [z (trans ,c)]) $ ~(~~(,x -> ~,y) -> ~(,x -> ~,z)) -> ~(,y -> ~,z) $)]
+    [ $ ,a $ ,a]))
+
+-- Construct the proof of defintional unfolding
+(def (trans1 t)
+  (match t
+    [ $ ,a -> ,b $     (let ([x (trans1 ,a)] [y (trans1 ,b)]) $ ,x -> ,y $)]
+    [ $ ,a /\ ,b $     (let ([x (trans1 ,a)] [y (trans1 ,b)]) '(:unfold an (,a ,b) $ ~(,x -> ~,y) $))]
+    [ $ ~,a $          (let ([x (trans1 ,a)]) $ ~,x $)]
+    [ $ ,a <-> ,b $    (let ([x (trans1 ,a)] [y (trans1 ,b)]) '(:unfold iff (,a ,b) $ ~((,x -> ,y) -> ~(,y -> ,x)) $))]
+    [ $ ,a \/ ,b $     (let ([x (trans1 ,a)] [y (trans1 ,b)]) '(:unfold or (,a ,b) $ ~,x -> ,y $))]
+    [ $ ,a -/\ ,b $    (let ([x (trans1 ,a)] [y (trans1 ,b)]) '(:unfold nan (,a ,b) $ ~~(,x -> ~,y) $))]
+    [ $ F. $  '(:unfold fal () $ ~T. $)]
+    [ $ ,a \/_ ,b $    (let ([x (trans1 ,a)] [y (trans1 ,b)]) '(:unfold xor (,a ,b) $ ~~((,x -> ,y) -> ~(,y -> ,x)) $))]
+    [ $ ,a -\/ ,b $    (let ([x (trans1 ,a)] [y (trans1 ,b)]) '(:unfold nor (,a ,b) $ ~(~,x -> ,y) $))]
+    [ $ ifp ,a ,b ,c $ (let ([x (trans1 ,a)] [y (trans1 ,b)] [z (trans1 ,c)]) '(:unfold ifp (,a ,b ,c) $ ~~(,x -> ~,y) -> ~(~,x -> ~,z) $))]
+    [ $ had ,a ,b ,c $ (let ([x (trans1 ,a)] [y (trans1 ,b)] [z (trans1 ,c)]) '(:unfold had (,a ,b ,c) $ ~~((~~((,x -> ,y) -> ~(,y -> ,x)) -> ,z) -> ~(,z -> ~~((,x -> ,y) -> ~(,y -> ,x)))) $))]
+    [ $ cad ,a ,b ,c $ (let ([x (trans1 ,a)] [y (trans1 ,b)] [z (trans1 ,c)]) '(:unfold cad (,a ,b ,c) $ ~(~~(,x -> ~,y) -> ~(,x -> ~,z)) -> ~(,y -> ~,z) $))]
+    [ $ ,a $ ,a]))
+
+-- Beginning of the tauto tactic
+(def (tauto refine t)
+  (match t
+    [ $ ,a -> ,b $     (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a -> ,b $ $ ,x1 -> ,y1 $ ,(refine $ ,x -> ,y $ start)))]
+    [ $ ,a /\ ,b $     (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a /\ ,b $ (:unfold an (,a ,b) $ ~(,x1 -> ~,y1) $) ,(refine $ ~(,x -> ~,y) $ start)))]
+    [ $ ~,a $          (let ([x (trans ,a)] [x1 (trans1 ,a)]) '(:conv $ ~,a $ $ ~,x1 $ ,(refine $ ~,x $ start)))]
+    [ $ ,a <-> ,b $    (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a <-> ,b $ (:unfold iff (,a ,b) $ ~((,x1 -> ,y1) -> ~(,y1 -> ,x1)) $) ,(refine $ ~((,x -> ,y) -> ~(,y -> ,x)) $ start)))]
+    [ $ ,a \/ ,b $     (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a \/ ,b $ (:unfold or (,a ,b) $ ~,x1 -> ,y1 $) ,(refine $ ~,x -> ,y $ start)))]
+    [ $ ,a -/\ ,b $    (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a -/\ ,b $ (:unfold nan (,a ,b) $ ~~(,x1 -> ~,y1) $) ,(refine $ ~~(,x -> ~,y) $ start)))]
+    [ $ ,a \/_ ,b $    (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a \/_ ,b $ (:unfold xor (,a ,b) $ ~~((,x1 -> ,y1) -> ~(,y1 -> ,x1)) $) ,(refine $ ~~((,x -> ,y) -> ~(,y -> ,x)) $ start)))]
+    [ $ ,a -\/ ,b $    (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a -\/ ,b $ (:unfold nor (,a ,b) $ ~(~,x1 -> ,y1) $) ,(refine $ ~(~,x -> ,y) $ start)))]
+    [ $ ifp ,a ,b ,c $ (let ([x (trans ,a)] [y (trans ,b)] [z (trans ,c)] [x1 (trans1 ,a)] [y1 (trans1 ,b)] [z1 (trans1 ,c)]) '(:conv $ ifp ,a ,b ,c $ (:unfold ifp (,a ,b ,c) $ ~~(,x1 -> ~,y1) -> ~(~,x1 -> ~,z1) $) ,(refine $ ~~(,x -> ~,y) -> ~(~,x -> ~,z) $ start)))]
+    [ $ had ,a ,b ,c $ (let ([x (trans ,a)] [y (trans ,b)] [z (trans ,c)] [x1 (trans1 ,a)] [y1 (trans1 ,b)] [z1 (trans1 ,c)]) '(:conv $ had ,a ,b ,c $ (:unfold had (,a ,b ,c) $ ~~((~~((,x1 -> ,y1) -> ~(,y1 -> ,x1)) -> ,z1) -> ~(,z1 -> ~~((,x1 -> ,y1) -> ~(,y1 -> ,x1)))) $) ,(refine $ ~~((~~((,x -> ,y) -> ~(,y -> ,x)) -> ,z) -> ~(,z -> ~~((,x -> ,y) -> ~(,y -> ,x)))) $ start)))]
+    [ $ cad ,a ,b ,c $ (let ([x (trans ,a)] [y (trans ,b)] [z (trans ,c)] [x1 (trans1 ,a)] [y1 (trans1 ,b)] [z1 (trans1 ,c)]) '(:conv $ cad ,a ,b ,c $ (:unfold cad (,a ,b ,c) $ ~(~~(,x1 -> ~,y1) -> ~(,x1 -> ~,z1)) -> ~(,y1 -> ~,z1) $) ,(refine $ ~(~~(,x -> ~,y) -> ~(,x -> ~,z)) -> ~(,y -> ~,z) $ start)))]
+    [ $ T. $ (refine t 'ax_tru)]
+    [_ (error "Syntax not found or attempted proof of false")]))
+};
+
+-- Examples
+theorem _ (ph ps: wff): $ ~((ph -> ph) -> ~(ph -> ps -> ph)) $= tauto;
+theorem _ (ph ps ch th: wff): $ ~((ph -> ph) -> ((ps -> th -> ps) -> ~(ch -> ch))) $= tauto;
+theorem _ (ph ps ch th ta: wff): $ ps -> (ph -> ps -> ch) -> (~ch -> (~th -> ta) -> ph) -> th -> ch $= tauto;
+theorem _ (ph ps: wff): $ ~((~(ph -> ~ps) -> ~(ps -> ~ph)) -> ~(~(ps -> ~ph) -> ~(ph -> ~ps))) $= tauto;
+theorem _ (ph ps ch th ta: wff): $ ~(ph -> ~(ph -> ~ph)) -> ~(((~(ta -> ch) -> th -> ph) -> ~(((ps -> ph) -> ~ch) -> ta)) -> ~(ta -> ~th) -> ps -> (~ th -> ~(~ph -> ch -> ~(ps -> ph)))) $= tauto;
+theorem _ (ph ps ch: wff): $ ~((~~((~~((ph -> ps) -> ~(ps -> ph)) -> ch) -> ~(ch -> ~~((ph -> ps) -> ~(ps -> ph)))) -> ~~(ph -> ~~((ps -> ch) -> ~(ch -> ps))) -> ~(~ph -> ~~~((ps -> ch) -> ~(ch -> ps))))
+-> ~((~~(ph -> ~~((ps -> ch) -> ~(ch -> ps))) -> ~(~ph -> ~~~((ps -> ch) -> ~(ch -> ps)))) -> ~~((~~((ph -> ps) -> ~(ps -> ph)) -> ch) -> ~(ch -> ~~((ph -> ps) -> ~(ps -> ph)))))) $= tauto;
+
+-- Theorems from set.mm 
+pub theorem _id (ph: wff): $ ph -> ph $= tauto;
+pub theorem _idd (ph ps: wff): $ ph -> ps -> ps $= tauto;
+pub theorem _2a1 (ph ps ch: wff): $ ph -> ps -> ch -> ph $= tauto;
+pub theorem pm2_27 (ph ps: wff): $ ph -> (ph -> ps) -> ps $= tauto;
+pub theorem pm2_43 (ph ps: wff): $ (ph -> ph -> ps) -> ph -> ps $= tauto;
+pub theorem _imim2 (ph ps ch: wff): $ (ph -> ps) -> (ch -> ph) -> ch -> ps $= tauto;
+pub theorem imim1 (ph ps ch: wff): $ (ph -> ps) -> (ps -> ch) -> ph -> ch $= tauto;
+pub theorem pm2_83 (ph ps ch th: wff): $ (ph -> ps -> ch) -> (ph -> ch -> th) -> ph -> ps -> th $= tauto;
+pub theorem peirceroll (ph ps ch: wff): $ (((ph -> ps) -> ph) -> ph) -> ((ph -> ps) -> ch) -> (ch -> ph) -> ph $= tauto;
+pub theorem pm2_04 (ph ps ch: wff): $ (ph -> ps -> ch) -> ps -> ph -> ch $= tauto;
+pub theorem imim12 (ph ps ch th: wff): $ (ph -> ps) -> (ch -> th) -> (ps -> ch) -> (ph -> th) $= tauto;
+pub theorem jarr (ph ps ch: wff): $ ((ph -> ps) -> ch) -> ps -> ch $= tauto;
+pub theorem pm2_86 (ph ps ch: wff): $ ((ph -> ps) -> ph -> ch) -> ph -> ps -> ch $= tauto;
+pub theorem loolin (ph ps: wff): $ ((ph -> ps) -> ps -> ph) -> ps -> ph $= tauto;
+pub theorem loowoz (ph ps ch: wff): $ (( ph -> ps ) -> ph -> ch) -> (ps -> ph) -> ps -> ch $= tauto;
+pub theorem con4 (ph ps: wff): $ (~ph -> ~ps) -> ps -> ph $= tauto;
+pub theorem _pm2_21 (ph ps: wff): $ ~ph -> ph -> ps $= tauto;
+pub theorem _pm2_24 (ph ps: wff): $ ph -> ~ph -> ps $= tauto;
+pub theorem jarl (ph ps ch: wff): $ ((ph -> ps) -> ch) -> ~ph -> ch $= tauto;
+pub theorem pm2_18 (ph: wff): $ (~ph -> ph) -> ph $= tauto;
+pub theorem _notnotr (ph: wff): $ ~~ph -> ph $= tauto;
+pub theorem _con2 (ph ps: wff): $ (ph -> ~ps) -> ps -> ~ph $= tauto;
+pub theorem _notnot (ph: wff): $ ph -> ~~ph $= tauto;
+pub theorem _con1 (ph ps: wff): $ (~ ph -> ps) -> ~ps -> ph $= tauto;
+pub theorem _con3 (ph ps: wff): $ (ph -> ps) -> ~ps -> ~ph $= tauto;
+pub theorem pm3_2im (ph ps: wff): $ ph -> ps -> ~(ph -> ~ps) $= tauto;
+pub theorem jcn (ph ps: wff): $ ph -> ~ps -> ~(ph -> ps) $= tauto;
+pub theorem simprim (ph ps: wff): $ ~(ph -> ~ps) -> ps $= tauto;
+pub theorem simplim (ph ps: wff): $ ~(ph -> ps) -> ph $= tauto;
+pub theorem pm2_5g (ph ps ch: wff): $ ~(ph -> ps) -> ~ph -> ch $= tauto;
+pub theorem pm2_5 (ph ps: wff): $ ~(ph -> ps) -> ~ph -> ps $= tauto;
+pub theorem conax1 (ph ps: wff): $ ~(ph -> ps) -> ~ps $= tauto;
+pub theorem conax1k (ph ps ch: wff): $ ~(ph -> ps) -> ch -> ~ps $= tauto;
+pub theorem pm2_51 (ph ps: wff): $ ~(ph -> ps) -> ph -> ~ps $= tauto;
+pub theorem pm2_52 (ph ps: wff): $ ~(ph -> ps) -> ~ph -> ~ps $= tauto;
+pub theorem pm2_521g (ph ps ch: wff): $ ~(ph -> ps) -> ps -> ch $= tauto;
+pub theorem pm2_521g2 (ph ps ch: wff): $ ~(ph -> ps) -> ch -> ph $= tauto;
+pub theorem pm2_521 (ph ps: wff): $ ~(ph -> ps) -> ps -> ph $= tauto;
+pub theorem expt (ph ps ch: wff): $ (~(ph -> ~ps) -> ch) -> ph -> ps -> ch $= tauto;
+pub theorem impt (ph ps ch: wff): $ (ph -> ps -> ch) -> ~(ph -> ~ps) -> ch $= tauto;
+pub theorem pm2_01 (ph: wff): $ (ph -> ~ph) -> ~ph $= tauto;
+pub theorem pm2_6 (ph ps: wff): $ (~ph -> ps) -> (ph -> ps) -> ps $= tauto;
+pub theorem pm2_61 (ph ps: wff): $ (ph -> ps) -> (~ph -> ps) -> ps $= tauto;
+pub theorem pm2_65 (ph ps: wff): $ (ph -> ps) -> (ph -> ~ps) -> ~ph $= tauto;
+pub theorem peirce (ph ps: wff): $ ((ph -> ps) -> ph) -> ph $= tauto;
+pub theorem looinv (ph ps: wff): $ ((ph -> ps) -> ps) -> (ps -> ph) -> ph $= tauto;
+pub theorem bijust0 (ph: wff): $ ~((ph -> ph) -> ~(ph -> ph)) $= tauto;
+pub theorem bijust (ph ps: wff): $ ~((~((ph -> ps) -> ~(ps -> ph)) -> ~((ph -> ps) -> ~(ps -> ph))) -> ~(~((ph -> ps) -> ~(ps -> ph)) -> ~ ((ph -> ps) -> ~(ps -> ph)))) $= tauto;
+
+pub theorem df_bi (ph ps: wff): $ ~ ( ( ( ph <-> ps ) -> ~ ( ( ph -> ps ) -> ~ ( ps -> ph ) ) ) -> ~ ( ~ ( ( ph -> ps ) -> ~ ( ps -> ph ) ) -> ( ph <-> ps ) ) ) $= tauto;
+pub theorem impbi (ph ps: wff): $ ( ( ph -> ps ) -> ( ( ps -> ph ) -> ( ph <-> ps ) ) ) $= tauto;
+pub theorem dfbi1 (ph ps: wff): $ ( ( ph <-> ps ) <-> ~ ( ( ph -> ps ) -> ~ ( ps -> ph ) ) ) $= tauto;
+pub theorem biimp (ph ps: wff): $ ( ( ph <-> ps ) -> ( ph -> ps ) ) $= tauto;
+pub theorem biimpr (ph ps: wff): $ ( ( ph <-> ps ) -> ( ps -> ph ) ) $= tauto;
+pub theorem bicom1 (ph ps: wff): $ ( ( ph <-> ps ) -> ( ps <-> ph ) ) $= tauto;
+pub theorem bicom (ph ps: wff): $ ( ( ph <-> ps ) <-> ( ps <-> ph ) ) $= tauto;
+pub theorem biid (ph: wff): $ ( ph <-> ph ) $= tauto;
+pub theorem biidd (ph ps: wff): $ ( ph -> ( ps <-> ps ) ) $= tauto;
+pub theorem pm5_1im (ph ps: wff): $ ( ph -> ( ps -> ( ph <-> ps ) ) ) $= tauto;
+pub theorem monothetic (ph ps: wff): $ ( ( ph -> ph ) <-> ( ps -> ps ) ) $= tauto;
+pub theorem pm5_74 (ph ps ch: wff): $ ( ( ph -> ( ps <-> ch ) ) <-> ( ( ph -> ps ) <-> ( ph -> ch ) ) ) $= tauto;
+pub theorem notnotb (ph: wff): $ ( ph <-> ~ ~ ph ) $= tauto;
+pub theorem con34b (ph ps: wff): $ ( ( ph -> ps ) <-> ( ~ ps -> ~ ph ) ) $= tauto;
+pub theorem notbi (ph ps: wff): $ ( ( ph <-> ps ) <-> ( ~ ph <-> ~ ps ) ) $= tauto;
+pub theorem imbi12 (ph ps ch th: wff): $ ( ( ph <-> ps ) -> ( ( ch <-> th ) -> ( ( ph -> ch ) <-> ( ps -> th ) ) ) ) $= tauto;
+pub theorem imbi1 (ph ps ch: wff): $ ( ( ph <-> ps ) -> ( ( ph -> ch ) <-> ( ps -> ch ) ) ) $= tauto;
+pub theorem imbi2 (ph ps ch: wff): $ ( ( ph <-> ps ) -> ( ( ch -> ph ) <-> ( ch -> ps ) ) ) $= tauto;
+pub theorem bibi1 (ph ps ch: wff): $ ( ( ph <-> ps ) -> ( ( ph <-> ch ) <-> ( ps <-> ch ) ) ) $= tauto;
+pub theorem bitr3 (ph ps ch: wff): $ ( ( ph <-> ps ) -> ( ( ph <-> ch ) -> ( ps <-> ch ) ) ) $= tauto;
+pub theorem con2bi (ph ps: wff): $ ( ( ph <-> ~ ps ) <-> ( ps <-> ~ ph ) ) $= tauto;
+pub theorem con1b (ph ps: wff): $ ( ( ~ ph -> ps ) <-> ( ~ ps -> ph ) ) $= tauto;
+pub theorem con2b (ph ps: wff): $ ( ( ph -> ~ ps ) <-> ( ps -> ~ ph ) ) $= tauto;
+pub theorem biimt (ph ps: wff): $ ( ph -> ( ps <-> ( ph -> ps ) ) ) $= tauto;
+pub theorem pm5_5 (ph ps: wff): $ ( ph -> ( ( ph -> ps ) <-> ps ) ) $= tauto;
+pub theorem mtt (ph ps: wff): $ ( ~ ph -> ( ~ ps <-> ( ps -> ph ) ) ) $= tauto;
+pub theorem imnot (ph ps: wff): $ ( ~ ps -> ( ( ph -> ps ) <-> ~ ph ) ) $= tauto;
+pub theorem pm5_501 (ph ps: wff): $ ( ph -> ( ps <-> ( ph <-> ps ) ) ) $= tauto;
+pub theorem ibib (ph ps: wff): $ ( ( ph -> ps ) <-> ( ph -> ( ph <-> ps ) ) ) $= tauto;
+pub theorem ibibr (ph ps: wff): $ ( ( ph -> ps ) <-> ( ph -> ( ps <-> ph ) ) ) $= tauto;
+pub theorem nbn2 (ph ps: wff): $ ( ~ ph -> ( ~ ps <-> ( ph <-> ps ) ) ) $= tauto;
+pub theorem bibif (ph ps: wff): $ ( ~ ps -> ( ( ph <-> ps ) <-> ~ ph ) ) $= tauto;
+pub theorem pm5_21im (ph ps: wff): $ ( ~ ph -> ( ~ ps -> ( ph <-> ps ) ) ) $= tauto;
+pub theorem pm5_18 (ph ps: wff): $ ( ( ph <-> ps ) <-> ~ ( ph <-> ~ ps ) ) $= tauto;
+pub theorem xor3 (ph ps: wff): $ ( ~ ( ph <-> ps ) <-> ( ph <-> ~ ps ) ) $= tauto;
+pub theorem nbbn (ph ps: wff): $ ( ( ~ ph <-> ps ) <-> ~ ( ph <-> ps ) ) $= tauto;
+pub theorem biass (ph ps ch: wff): $ ( ( ( ph <-> ps ) <-> ch ) <-> ( ph <-> ( ps <-> ch ) ) ) $= tauto;
+pub theorem biluk (ph ps ch: wff): $ ( ( ph <-> ps ) <-> ( ( ch <-> ps ) <-> ( ph <-> ch ) ) ) $= tauto;
+pub theorem pm5_19 (ph: wff): $ ~ ( ph <-> ~ ph ) $= tauto;
+pub theorem bi2_04 (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) <-> ( ps -> ( ph -> ch ) ) ) $= tauto;
+pub theorem pm5_4 (ph ps: wff): $ ( ( ph -> ( ph -> ps ) ) <-> ( ph -> ps ) ) $= tauto;
+pub theorem imdi (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) <-> ( ( ph -> ps ) -> ( ph -> ch ) ) ) $= tauto;
+pub theorem pm5_41 (ph ps ch: wff): $ ( ( ( ph -> ps ) -> ( ph -> ch ) ) <-> ( ph -> ( ps -> ch ) ) ) $= tauto;
+pub theorem imbibi (ph ps ch: wff): $ ( ( ( ph -> ps ) <-> ch ) -> ( ph -> ( ps <-> ch ) ) ) $= tauto;
+pub theorem pm4_8 (ph: wff): $ ( ( ph -> ~ ph ) <-> ~ ph ) $= tauto;
+pub theorem pm4_81 (ph: wff): $ ( ( ~ ph -> ph ) <-> ph ) $= tauto;
+pub theorem imim21b (ph ps ch th: wff): $ ( ( ps -> ph ) -> ( ( ( ph -> ch ) -> ( ps -> th ) ) <-> ( ps -> ( ch -> th ) ) ) ) $= tauto;
+
+pub theorem df_an (ph ps: wff): $ ( ( ph /\ ps ) <-> ~ ( ph -> ~ ps ) ) $= tauto;
+pub theorem pm4_63 (ph ps: wff): $ ( ~ ( ph -> ~ ps ) <-> ( ph /\ ps ) ) $= tauto;
+pub theorem pm4_67 (ph ps: wff): $ ( ~ ( ~ ph -> ~ ps ) <-> ( ~ ph /\ ps ) ) $= tauto;
+pub theorem imnan (ph ps: wff): $ ( ( ph -> ~ ps ) <-> ~ ( ph /\ ps ) ) $= tauto;
+pub theorem iman (ph ps: wff): $ ( ( ph -> ps ) <-> ~ ( ph /\ ~ ps ) ) $= tauto;
+pub theorem pm3_24 (ph: wff): $ ~ ( ph /\ ~ ph ) $= tauto;
+pub theorem annim (ph ps: wff): $ ( ( ph /\ ~ ps ) <-> ~ ( ph -> ps ) ) $= tauto;
+pub theorem pm4_61 (ph ps: wff): $ ( ~ ( ph -> ps ) <-> ( ph /\ ~ ps ) ) $= tauto;
+pub theorem pm4_65 (ph ps: wff): $ ( ~ ( ~ ph -> ps ) <-> ( ~ ph /\ ~ ps ) ) $= tauto;
+pub theorem pm3_3 (ph ps ch: wff): $ ( ( ( ph /\ ps ) -> ch ) -> ( ph -> ( ps -> ch ) ) ) $= tauto;
+pub theorem pm3_31 (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) -> ( ( ph /\ ps ) -> ch ) ) $= tauto;
+pub theorem impexp (ph ps ch: wff): $ ( ( ( ph /\ ps ) -> ch ) <-> ( ph -> ( ps -> ch ) ) ) $= tauto;
+pub theorem pm3_22 (ph ps: wff): $ ( ( ph /\ ps ) -> ( ps /\ ph ) ) $= tauto;
+pub theorem ancom (ph ps: wff): $ ( ( ph /\ ps ) <-> ( ps /\ ph ) ) $= tauto;
+pub theorem ancomst (ph ps ch: wff): $ ( ( ( ph /\ ps ) -> ch ) <-> ( ( ps /\ ph ) -> ch ) ) $= tauto;
+pub theorem anass (ph ps ch: wff): $ ( ( ( ph /\ ps ) /\ ch ) <-> ( ph /\ ( ps /\ ch ) ) ) $= tauto;
+pub theorem pm3_2 (ph ps: wff): $ ( ph -> ( ps -> ( ph /\ ps ) ) ) $= tauto;
+pub theorem pm3_21 (ph ps: wff): $ ( ph -> ( ps -> ( ps /\ ph ) ) ) $= tauto;
+pub theorem pm3_43i (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ph -> ch ) -> ( ph -> ( ps /\ ch ) ) ) ) $= tauto;
+pub theorem pm3_43 (ph ps ch: wff): $ ( ( ( ph -> ps ) /\ ( ph -> ch ) ) -> ( ph -> ( ps /\ ch ) ) ) $= tauto;
+pub theorem dfbi2 (ph ps: wff): $ ( ( ph <-> ps ) <-> ( ( ph -> ps ) /\ ( ps -> ph ) ) ) $= tauto;
+pub theorem dfbi (ph ps: wff): $ ( ( ( ph <-> ps ) -> ( ( ph -> ps ) /\ ( ps -> ph ) ) ) /\ ( ( ( ph -> ps ) /\ ( ps -> ph ) ) -> ( ph <-> ps ) ) ) $= tauto;
+pub theorem simpl (ph ps: wff): $ ( ( ph /\ ps ) -> ph ) $= tauto;
+pub theorem simpr (ph ps: wff): $ ( ( ph /\ ps ) -> ps ) $= tauto;
+pub theorem pm3_41 (ph ps ch: wff): $ ( ( ph -> ch ) -> ( ( ph /\ ps ) -> ch ) ) $= tauto;
+pub theorem pm3_42 (ph ps ch: wff): $ ( ( ps -> ch ) -> ( ( ph /\ ps ) -> ch ) ) $= tauto;
+pub theorem simplbi2comt (ph ps ch: wff): $ ( ( ph <-> ( ps /\ ch ) ) -> ( ch -> ( ps -> ph ) ) ) $= tauto;
+pub theorem jcab (ph ps ch: wff): $ ( ( ph -> ( ps /\ ch ) ) <-> ( ( ph -> ps ) /\ ( ph -> ch ) ) ) $= tauto;
+pub theorem pm4_76 (ph ps ch: wff): $ ( ( ( ph -> ps ) /\ ( ph -> ch ) ) <-> ( ph -> ( ps /\ ch ) ) ) $= tauto;
+pub theorem iba (ph ps: wff): $ ( ph -> ( ps <-> ( ps /\ ph ) ) ) $= tauto;
+pub theorem ibar (ph ps: wff): $ ( ph -> ( ps <-> ( ph /\ ps ) ) ) $= tauto;
+pub theorem pm5_44 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ph -> ch ) <-> ( ph -> ( ps /\ ch ) ) ) ) $= tauto;
+pub theorem pm5_42 (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) <-> ( ph -> ( ps -> ( ph /\ ch ) ) ) ) $= tauto;
+pub theorem ancl (ph ps: wff): $ ( ( ph -> ps ) -> ( ph -> ( ph /\ ps ) ) ) $= tauto;
+pub theorem anclb (ph ps: wff): $ ( ( ph -> ps ) <-> ( ph -> ( ph /\ ps ) ) ) $= tauto;
+pub theorem ancr (ph ps: wff): $ ( ( ph -> ps ) -> ( ph -> ( ps /\ ph ) ) ) $= tauto;
+pub theorem ancrb (ph ps: wff): $ ( ( ph -> ps ) <-> ( ph -> ( ps /\ ph ) ) ) $= tauto;
+pub theorem anc2l (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) -> ( ph -> ( ps -> ( ph /\ ch ) ) ) ) $= tauto;
+pub theorem anc2r (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) -> ( ph -> ( ps -> ( ch /\ ph ) ) ) ) $= tauto;
+pub theorem pm4_71 (ph ps: wff): $ ( ( ph -> ps ) <-> ( ph <-> ( ph /\ ps ) ) ) $= tauto;
+pub theorem pm4_71r (ph ps: wff): $ ( ( ph -> ps ) <-> ( ph <-> ( ps /\ ph ) ) ) $= tauto;
+pub theorem pm4_24 (ph: wff): $ ( ph <-> ( ph /\ ph ) ) $= tauto;
+pub theorem anidm (ph: wff): $ ( ( ph /\ ph ) <-> ph ) $= tauto;
+pub theorem anidmdbi (ph ps: wff): $ ( ( ph -> ( ps /\ ps ) ) <-> ( ph -> ps ) ) $= tauto;
+pub theorem imdistan (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) <-> ( ( ph /\ ps ) -> ( ph /\ ch ) ) ) $= tauto;
+pub theorem pm5_3 (ph ps ch: wff): $ ( ( ( ph /\ ps ) -> ch ) <-> ( ( ph /\ ps ) -> ( ph /\ ch ) ) ) $= tauto;
+pub theorem pm5_32 (ph ps ch: wff): $ ( ( ph -> ( ps <-> ch ) ) <-> ( ( ph /\ ps ) <-> ( ph /\ ch ) ) ) $= tauto;
+pub theorem pm3_45 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ph /\ ch ) -> ( ps /\ ch ) ) ) $= tauto;
+pub theorem anbi1 (ph ps ch: wff): $ ( ( ph <-> ps ) -> ( ( ph /\ ch ) <-> ( ps /\ ch ) ) ) $= tauto;
+pub theorem anbi2 (ph ps ch: wff): $ ( ( ph <-> ps ) -> ( ( ch /\ ph ) <-> ( ch /\ ps ) ) ) $= tauto;
+pub theorem an2anr (ph ps ch th: wff): $ ( ( ( ph /\ ps ) /\ ( ch /\ th ) ) <-> ( ( ps /\ ph ) /\ ( th /\ ch ) ) ) $= tauto;
+pub theorem pm4_38 (ph ps ch th: wff): $ ( ( ( ph <-> ch ) /\ ( ps <-> th ) ) -> ( ( ph /\ ps ) <-> ( ch /\ th ) ) ) $= tauto;
+pub theorem an21 (ph ps ch: wff): $ ( ( ( ph /\ ps ) /\ ch ) <-> ( ps /\ ( ph /\ ch ) ) ) $= tauto;
+pub theorem an12 (ph ps ch: wff): $ ( ( ph /\ ( ps /\ ch ) ) <-> ( ps /\ ( ph /\ ch ) ) ) $= tauto;
+pub theorem an32 (ph ps ch: wff): $ ( ( ( ph /\ ps ) /\ ch ) <-> ( ( ph /\ ch ) /\ ps ) ) $= tauto;
+pub theorem an13 (ph ps ch: wff): $ ( ( ph /\ ( ps /\ ch ) ) <-> ( ch /\ ( ps /\ ph ) ) ) $= tauto;
+pub theorem an31 (ph ps ch: wff): $ ( ( ( ph /\ ps ) /\ ch ) <-> ( ( ch /\ ps ) /\ ph ) ) $= tauto;
+pub theorem an4 (ph ps ch th: wff): $ ( ( ( ph /\ ps ) /\ ( ch /\ th ) ) <-> ( ( ph /\ ch ) /\ ( ps /\ th ) ) ) $= tauto;
+pub theorem an42 (ph ps ch th: wff): $ ( ( ( ph /\ ps ) /\ ( ch /\ th ) ) <-> ( ( ph /\ ch ) /\ ( th /\ ps ) ) ) $= tauto;
+pub theorem an43 (ph ps ch th: wff): $ ( ( ( ph /\ ps ) /\ ( ch /\ th ) ) <-> ( ( ph /\ th ) /\ ( ps /\ ch ) ) ) $= tauto;
+pub theorem an3 (ph ps ch th: wff): $ ( ( ( ph /\ ps ) /\ ( ch /\ th ) ) -> ( ph /\ th ) ) $= tauto;
+pub theorem anabs1 (ph ps: wff): $ ( ( ( ph /\ ps ) /\ ph ) <-> ( ph /\ ps ) ) $= tauto;
+pub theorem anabs5 (ph ps: wff): $ ( ( ph /\ ( ph /\ ps ) ) <-> ( ph /\ ps ) ) $= tauto;
+pub theorem anabs7 (ph ps: wff): $ ( ( ps /\ ( ph /\ ps ) ) <-> ( ph /\ ps ) ) $= tauto;
+pub theorem anandi (ph ps ch: wff): $ ( ( ph /\ ( ps /\ ch ) ) <-> ( ( ph /\ ps ) /\ ( ph /\ ch ) ) ) $= tauto;
+pub theorem anandir (ph ps ch: wff): $ ( ( ( ph /\ ps ) /\ ch ) <-> ( ( ph /\ ch ) /\ ( ps /\ ch ) ) ) $= tauto;
+pub theorem pm3_33 (ph ps ch: wff): $ ( ( ( ph -> ps ) /\ ( ps -> ch ) ) -> ( ph -> ch ) ) $= tauto;
+pub theorem pm3_34 (ph ps ch: wff): $ ( ( ( ps -> ch ) /\ ( ph -> ps ) ) -> ( ph -> ch ) ) $= tauto;
+pub theorem simpll (ph ps ch: wff): $ ( ( ( ph /\ ps ) /\ ch ) -> ph ) $= tauto;
+pub theorem simplr (ph ps ch: wff): $ ( ( ( ph /\ ps ) /\ ch ) -> ps ) $= tauto;
+pub theorem simprl (ph ps ch: wff): $ ( ( ph /\ ( ps /\ ch ) ) -> ps ) $= tauto;
+pub theorem simprr (ph ps ch: wff): $ ( ( ph /\ ( ps /\ ch ) ) -> ch ) $= tauto;
+pub theorem simplll (ph ps ch th: wff): $ ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) -> ph ) $= tauto;
+pub theorem simpllr (ph ps ch th: wff): $ ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) -> ps ) $= tauto;
+pub theorem simplrl (ph ps ch th: wff): $ ( ( ( ph /\ ( ps /\ ch ) ) /\ th ) -> ps ) $= tauto;
+pub theorem simplrr (ph ps ch th: wff): $ ( ( ( ph /\ ( ps /\ ch ) ) /\ th ) -> ch ) $= tauto;
+pub theorem simprll (ph ps ch th: wff): $ ( ( ph /\ ( ( ps /\ ch ) /\ th ) ) -> ps ) $= tauto;
+pub theorem simprlr (ph ps ch th: wff): $ ( ( ph /\ ( ( ps /\ ch ) /\ th ) ) -> ch ) $= tauto;
+pub theorem simprrl (ph ps ch th: wff): $ ( ( ph /\ ( ps /\ ( ch /\ th ) ) ) -> ch ) $= tauto;
+pub theorem simprrr (ph ps ch th: wff): $ ( ( ph /\ ( ps /\ ( ch /\ th ) ) ) -> th ) $= tauto;
+pub theorem simp_4l (ph ps ch th ta: wff): $ ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) -> ph ) $= tauto;
+pub theorem simp_4r (ph ps ch th ta: wff): $ ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) -> ps ) $= tauto;
+pub theorem simp_5l (ph ps ch th ta et : wff): $ ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) -> ph ) $= tauto;
+pub theorem simp_5r (ph ps ch th ta et: wff): $ ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) -> ps ) $= tauto;
+pub theorem simp_6l (ph ps ch th ta et ze: wff): $ ( ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) /\ ze ) -> ph ) $= tauto;
+pub theorem simp_6r (ph ps ch th ta et ze: wff): $ ( ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) /\ ze ) -> ps ) $= tauto;
+pub theorem simp_7l (ph ps ch th ta et ze si: wff): $ ( ( ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) /\ ze ) /\ si ) -> ph ) $= tauto;
+pub theorem simp_7r (ph ps ch th ta et ze si: wff): $ ( ( ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) /\ ze ) /\ si ) -> ps ) $= tauto;
+pub theorem simp_8l (ph ps ch th ta et ze si rh: wff): $ ( ( ( ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) /\ ze ) /\ si ) /\ rh ) -> ph ) $= tauto;
+pub theorem simp_8r (ph ps ch th ta et ze si rh: wff): $ ( ( ( ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) /\ ze ) /\ si ) /\ rh ) -> ps ) $= tauto;
+pub theorem simp_9l (ph ps ch th ta et ze si rh mu: wff): $ ( ( ( ( ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) /\ ze ) /\ si ) /\ rh ) /\ mu ) -> ph ) $= tauto;
+pub theorem simp_9r (ph ps ch th ta et ze si rh mu: wff): $ ( ( ( ( ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) /\ ze ) /\ si ) /\ rh ) /\ mu ) -> ps ) $= tauto;
+pub theorem simp_10l (ph ps ch th ta et ze si rh mu la: wff): $ ( ( ( ( ( ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) /\ ze ) /\ si ) /\ rh ) /\ mu ) /\ la ) -> ph ) $= tauto;
+pub theorem simp_10r (ph ps ch th ta et ze si rh mu la: wff): $ ( ( ( ( ( ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) /\ ze ) /\ si ) /\ rh ) /\ mu ) /\ la ) -> ps ) $= tauto;
+pub theorem simp_11l (ph ps ch th ta et ze si rh mu la ka: wff): $ ( ( ( ( ( ( ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) /\ ze ) /\ si ) /\ rh ) /\ mu ) /\ la ) /\ ka ) -> ph ) $= tauto;
+pub theorem simp_11r (ph ps ch th ta et ze si rh mu la ka: wff): $ ( ( ( ( ( ( ( ( ( ( ( ( ph /\ ps ) /\ ch ) /\ th ) /\ ta ) /\ et ) /\ ze ) /\ si ) /\ rh ) /\ mu ) /\ la ) /\ ka ) -> ps ) $= tauto;
+pub theorem pm3_35 (ph ps: wff): $ ( ( ph /\ ( ph -> ps ) ) -> ps ) $= tauto;
+pub theorem bitr (ph ps ch: wff): $ ( ( ( ph <-> ps ) /\ ( ps <-> ch ) ) -> ( ph <-> ch ) ) $= tauto;
+pub theorem biantr (ph ps ch: wff): $ ( ( ( ph <-> ps ) /\ ( ch <-> ps ) ) -> ( ph <-> ch ) ) $= tauto;
+pub theorem pm4_14 (ph ps ch: wff): $ ( ( ( ph /\ ps ) -> ch ) <-> ( ( ph /\ ~ ch ) -> ~ ps ) ) $= tauto;
+pub theorem pm3_37 (ph ps ch: wff): $ ( ( ( ph /\ ps ) -> ch ) -> ( ( ph /\ ~ ch ) -> ~ ps ) ) $= tauto;
+pub theorem anim12 (ph ps ch th: wff): $ ( ( ( ph -> ps ) /\ ( ch -> th ) ) -> ( ( ph /\ ch ) -> ( ps /\ th ) ) ) $= tauto;
+pub theorem pm3_4 (ph ps: wff): $ ( ( ph /\ ps ) -> ( ph -> ps ) ) $= tauto;
+pub theorem biadan (ph ps ch: wff): $ ( ( ph -> ps ) <-> ( ( ps -> ( ph <-> ch ) ) <-> ( ph <-> ( ps /\ ch ) ) ) ) $= tauto;
+pub theorem pm5_1 (ph ps: wff): $ ( ( ph /\ ps ) -> ( ph <-> ps ) ) $= tauto;
+pub theorem pm5_21 (ph ps: wff): $ ( ( ~ ph /\ ~ ps ) -> ( ph <-> ps ) ) $= tauto;
+pub theorem pm5_35 (ph ps ch: wff): $ ( ( ( ph -> ps ) /\ ( ph -> ch ) ) -> ( ph -> ( ps <-> ch ) ) ) $= tauto;
+pub theorem abai (ph ps: wff): $ ( ( ph /\ ps ) <-> ( ph /\ ( ph -> ps ) ) ) $= tauto;
+pub theorem pm4_45im (ph ps: wff): $ ( ph <-> ( ph /\ ( ps -> ph ) ) ) $= tauto;
+pub theorem impimprbi (ph ps: wff): $ ( ( ph <-> ps ) <-> ( ( ph -> ps ) <-> ( ps -> ph ) ) ) $= tauto;
+pub theorem _nan (ph ps ch: wff): $ ( ( ph -> ~ ( ps /\ ch ) ) <-> ( ( ph /\ ps ) -> ~ ch ) ) $= tauto;
+pub theorem pm5_31 (ph ps ch: wff): $ ( ( ch /\ ( ph -> ps ) ) -> ( ph -> ( ps /\ ch ) ) ) $= tauto;
+pub theorem pm5_31r (ph ps ch: wff): $ ( ( ch /\ ( ph -> ps ) ) -> ( ph -> ( ch /\ ps ) ) ) $= tauto;
+pub theorem pm4_15 (ph ps ch: wff): $ ( ( ( ph /\ ps ) -> ~ ch ) <-> ( ( ps /\ ch ) -> ~ ph ) ) $= tauto;
+pub theorem pm5_36 (ph ps: wff): $ ( ( ph /\ ( ph <-> ps ) ) <-> ( ps /\ ( ph <-> ps ) ) ) $= tauto;
+pub theorem annotanannot (ph ps: wff): $ ( ( ph /\ ~ ( ph /\ ps ) ) <-> ( ph /\ ~ ps ) ) $= tauto;
+pub theorem pm5_33 (ph ps ch: wff): $ ( ( ph /\ ( ps -> ch ) ) <-> ( ph /\ ( ( ph /\ ps ) -> ch ) ) ) $= tauto;
+pub theorem pm4_87 (ph ps ch: wff): $ ( ( ( ( ( ph /\ ps ) -> ch ) <-> ( ph -> ( ps -> ch ) ) ) /\ ( ( ph -> ( ps -> ch ) ) <-> ( ps -> ( ph -> ch ) ) ) ) /\ ( ( ps -> ( ph -> ch ) ) <-> ( ( ps /\ ph ) -> ch ) ) ) $= tauto;
+pub theorem bimsc1 (ph ps ch: wff): $ ( ( ( ph -> ps ) /\ ( ch <-> ( ps /\ ph ) ) ) -> ( ch <-> ph ) ) $= tauto;
+
+pub theorem df_or (ph ps: wff): $ ( ( ph \/ ps ) <-> ( ~ ph -> ps ) ) $= tauto;
+pub theorem pm4_64 (ph ps: wff): $ ( ( ~ ph -> ps ) <-> ( ph \/ ps ) ) $= tauto;
+pub theorem pm4_66 (ph ps: wff): $ ( ( ~ ph -> ~ ps ) <-> ( ph \/ ~ ps ) ) $= tauto;
+pub theorem pm2_53 (ph ps: wff): $ ( ( ph \/ ps ) -> ( ~ ph -> ps ) ) $= tauto;
+pub theorem pm2_54 (ph ps: wff): $ ( ( ~ ph -> ps ) -> ( ph \/ ps ) ) $= tauto;
+pub theorem imor (ph ps: wff): $ ( ( ph -> ps ) <-> ( ~ ph \/ ps ) ) $= tauto;
+pub theorem pm4_62 (ph ps: wff): $ ( ( ph -> ~ ps ) <-> ( ~ ph \/ ~ ps ) ) $= tauto;
+pub theorem orc (ph ps: wff): $ ( ph -> ( ph \/ ps ) ) $= tauto;
+pub theorem olc (ph ps: wff): $ ( ph -> ( ps \/ ph ) ) $= tauto;
+pub theorem pm1_4 (ph ps: wff): $ ( ( ph \/ ps ) -> ( ps \/ ph ) ) $= tauto;
+pub theorem orcom (ph ps: wff): $ ( ( ph \/ ps ) <-> ( ps \/ ph ) ) $= tauto;
+pub theorem pm2_45 (ph ps: wff): $ ( ~ ( ph \/ ps ) -> ~ ph ) $= tauto;
+pub theorem pm2_46 (ph ps: wff): $ ( ~ ( ph \/ ps ) -> ~ ps ) $= tauto;
+pub theorem pm2_47 (ph ps: wff): $ ( ~ ( ph \/ ps ) -> ( ~ ph \/ ps ) ) $= tauto;
+pub theorem pm2_48 (ph ps: wff): $ ( ~ ( ph \/ ps ) -> ( ph \/ ~ ps ) ) $= tauto;
+pub theorem pm2_49 (ph ps: wff): $ ( ~ ( ph \/ ps ) -> ( ~ ph \/ ~ ps ) ) $= tauto;
+pub theorem norbi (ph ps: wff): $ ( ~ ( ph \/ ps ) -> ( ph <-> ps ) ) $= tauto;
+pub theorem nbior (ph ps: wff): $ ( ~ ( ph <-> ps ) -> ( ph \/ ps ) ) $= tauto;
+pub theorem orel1 (ph ps: wff): $ ( ~ ph -> ( ( ph \/ ps ) -> ps ) ) $= tauto;
+pub theorem pm2_25 (ph ps: wff): $ ( ph \/ ( ( ph \/ ps ) -> ps ) ) $= tauto;
+pub theorem orel2 (ph ps: wff): $ ( ~ ph -> ( ( ps \/ ph ) -> ps ) ) $= tauto;
+pub theorem pm2_67_2 (ph ps ch: wff): $ ( ( ( ph \/ ch ) -> ps ) -> ( ph -> ps ) ) $= tauto;
+pub theorem pm2_67 (ph ps: wff): $ ( ( ( ph \/ ps ) -> ps ) -> ( ph -> ps ) ) $= tauto;
+pub theorem curryax (ph ps: wff): $ ( ph \/ ( ph -> ps ) ) $= tauto;
+pub theorem exmid (ph: wff): $ ( ph \/ ~ ph ) $= tauto;
+pub theorem exmidd (ph ps: wff): $ ( ph -> ( ps \/ ~ ps ) ) $= tauto;
+pub theorem pm2_1 (ph: wff): $ ( ~ ph \/ ph ) $= tauto;
+pub theorem pm2_13 (ph: wff): $ ( ph \/ ~ ~ ~ ph ) $= tauto;
+pub theorem pm2_621 (ph ps: wff): $ ( ( ph -> ps ) -> ( ( ph \/ ps ) -> ps ) ) $= tauto;
+pub theorem pm2_62 (ph ps: wff): $ ( ( ph \/ ps ) -> ( ( ph -> ps ) -> ps ) ) $= tauto;
+pub theorem pm2_68 (ph ps: wff): $ ( ( ( ph -> ps ) -> ps ) -> ( ph \/ ps ) ) $= tauto;
+pub theorem dfor2 (ph ps: wff): $ ( ( ph \/ ps ) <-> ( ( ph -> ps ) -> ps ) ) $= tauto;
+pub theorem pm2_07 (ph: wff): $ ( ph -> ( ph \/ ph ) ) $= tauto;
+pub theorem pm1_2 (ph: wff): $ ( ( ph \/ ph ) -> ph ) $= tauto;
+pub theorem oridm (ph: wff): $ ( ( ph \/ ph ) <-> ph ) $= tauto;
+pub theorem pm4_25 (ph: wff): $ ( ph <-> ( ph \/ ph ) ) $= tauto;
+pub theorem pm2_4 (ph ps: wff): $ ( ( ph \/ ( ph \/ ps ) ) -> ( ph \/ ps ) ) $= tauto;
+pub theorem pm2_41 (ph ps: wff): $ ( ( ps \/ ( ph \/ ps ) ) -> ( ph \/ ps ) ) $= tauto;
+pub theorem orbi1 (ph ps ch: wff): $ ( ( ph <-> ps ) -> ( ( ph \/ ch ) <-> ( ps \/ ch ) ) ) $= tauto;
+pub theorem pm1_5 (ph ps ch: wff): $ ( ( ph \/ ( ps \/ ch ) ) -> ( ps \/ ( ph \/ ch ) ) ) $= tauto;
+pub theorem or12 (ph ps ch: wff): $ ( ( ph \/ ( ps \/ ch ) ) <-> ( ps \/ ( ph \/ ch ) ) ) $= tauto;
+pub theorem orass (ph ps ch: wff): $ ( ( ( ph \/ ps ) \/ ch ) <-> ( ph \/ ( ps \/ ch ) ) ) $= tauto;
+pub theorem pm2_31 (ph ps ch: wff): $ ( ( ph \/ ( ps \/ ch ) ) -> ( ( ph \/ ps ) \/ ch ) ) $= tauto;
+pub theorem pm2_32 (ph ps ch: wff): $ ( ( ( ph \/ ps ) \/ ch ) -> ( ph \/ ( ps \/ ch ) ) ) $= tauto;
+pub theorem pm2_3 (ph ps ch: wff): $ ( ( ph \/ ( ps \/ ch ) ) -> ( ph \/ ( ch \/ ps ) ) ) $= tauto;
+pub theorem or32 (ph ps ch: wff): $ ( ( ( ph \/ ps ) \/ ch ) <-> ( ( ph \/ ch ) \/ ps ) ) $= tauto;
+pub theorem or4 (ph ps ch th: wff): $ ( ( ( ph \/ ps ) \/ ( ch \/ th ) ) <-> ( ( ph \/ ch ) \/ ( ps \/ th ) ) ) $= tauto;
+pub theorem or42 (ph ps ch th: wff): $ ( ( ( ph \/ ps ) \/ ( ch \/ th ) ) <-> ( ( ph \/ ch ) \/ ( th \/ ps ) ) ) $= tauto;
+pub theorem orordi (ph ps ch: wff): $ ( ( ph \/ ( ps \/ ch ) ) <-> ( ( ph \/ ps ) \/ ( ph \/ ch ) ) ) $= tauto;
+pub theorem orordir (ph ps ch: wff): $ ( ( ( ph \/ ps ) \/ ch ) <-> ( ( ph \/ ch ) \/ ( ps \/ ch ) ) ) $= tauto;
+pub theorem orimdi (ph ps ch: wff): $ ( ( ph \/ ( ps -> ch ) ) <-> ( ( ph \/ ps ) -> ( ph \/ ch ) ) ) $= tauto;
+pub theorem pm2_76 (ph ps ch: wff): $ ( ( ph \/ ( ps -> ch ) ) -> ( ( ph \/ ps ) -> ( ph \/ ch ) ) ) $= tauto;
+pub theorem pm2_85 (ph ps ch: wff): $ ( ( ( ph \/ ps ) -> ( ph \/ ch ) ) -> ( ph \/ ( ps -> ch ) ) ) $= tauto;
+pub theorem pm2_75 (ph ps ch: wff): $ ( ( ph \/ ps ) -> ( ( ph \/ ( ps -> ch ) ) -> ( ph \/ ch ) ) ) $= tauto;
+pub theorem pm4_78 (ph ps ch: wff): $ ( ( ( ph -> ps ) \/ ( ph -> ch ) ) <-> ( ph -> ( ps \/ ch ) ) ) $= tauto;
+pub theorem biort (ph ps: wff): $ ( ph -> ( ph <-> ( ph \/ ps ) ) ) $= tauto;
+pub theorem biorf (ph ps: wff): $ ( ~ ph -> ( ps <-> ( ph \/ ps ) ) ) $= tauto;
+pub theorem biortn (ph ps: wff): $ ( ph -> ( ps <-> ( ~ ph \/ ps ) ) ) $= tauto;
+pub theorem pm2_26 (ph ps: wff): $ ( ~ ph \/ ( ( ph -> ps ) -> ps ) ) $= tauto;
+pub theorem pm2_63 (ph ps: wff): $ ( ( ph \/ ps ) -> ( ( ~ ph \/ ps ) -> ps ) ) $= tauto;
+pub theorem pm2_64 (ph ps: wff): $ ( ( ph \/ ps ) -> ( ( ph \/ ~ ps ) -> ph ) ) $= tauto;
+pub theorem pm2_42 (ph ps: wff): $ ( ( ~ ph \/ ( ph -> ps ) ) -> ( ph -> ps ) ) $= tauto;
+pub theorem pm5_11g (ph ps ch: wff): $ ( ( ph -> ps ) \/ ( ~ ph -> ch ) ) $= tauto;
+pub theorem pm5_11 (ph ps: wff): $ ( ( ph -> ps ) \/ ( ~ ph -> ps ) ) $= tauto;
+pub theorem pm5_12 (ph ps: wff): $ ( ( ph -> ps ) \/ ( ph -> ~ ps ) ) $= tauto;
+pub theorem pm5_14 (ph ps ch: wff): $ ( ( ph -> ps ) \/ ( ps -> ch ) ) $= tauto;
+pub theorem pm5_13 (ph ps: wff): $ ( ( ph -> ps ) \/ ( ps -> ph ) ) $= tauto;
+pub theorem pm5_55 (ph ps: wff): $ ( ( ( ph \/ ps ) <-> ph ) \/ ( ( ph \/ ps ) <-> ps ) ) $= tauto;
+pub theorem pm4_72 (ph ps: wff): $ ( ( ph -> ps ) <-> ( ps <-> ( ph \/ ps ) ) ) $= tauto;
+pub theorem imimorb (ph ps ch: wff): $ ( ( ( ps -> ch ) -> ( ph -> ch ) ) <-> ( ph -> ( ps \/ ch ) ) ) $= tauto;
+pub theorem oibabs (ph ps: wff): $ ( ( ( ph \/ ps ) -> ( ph <-> ps ) ) <-> ( ph <-> ps ) ) $= tauto;
+pub theorem orbidi (ph ps ch: wff): $ ( ( ph \/ ( ps <-> ch ) ) <-> ( ( ph \/ ps ) <-> ( ph \/ ch ) ) ) $= tauto;
+pub theorem pm5_7 (ph ps ch: wff): $ ( ( ( ph \/ ch ) <-> ( ps \/ ch ) ) <-> ( ch \/ ( ph <-> ps ) ) ) $= tauto;
+pub theorem pm3_44 (ph ps ch: wff): $ ( ( ( ps -> ph ) /\ ( ch -> ph ) ) -> ( ( ps \/ ch ) -> ph ) ) $= tauto;
+pub theorem jao (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ch -> ps ) -> ( ( ph \/ ch ) -> ps ) ) ) $= tauto;
+pub theorem jaob (ph ps ch: wff): $ ( ( ( ph \/ ch ) -> ps ) <-> ( ( ph -> ps ) /\ ( ch -> ps ) ) ) $= tauto;
+pub theorem pm4_77 (ph ps ch: wff): $ ( ( ( ps -> ph ) /\ ( ch -> ph ) ) <-> ( ( ps \/ ch ) -> ph ) ) $= tauto;
+pub theorem pm3_48 (ph ps ch th: wff): $ ( ( ( ph -> ps ) /\ ( ch -> th ) ) -> ( ( ph \/ ch ) -> ( ps \/ th ) ) ) $= tauto;
+pub theorem orim2 (ph ps ch: wff): $ ( ( ps -> ch ) -> ( ( ph \/ ps ) -> ( ph \/ ch ) ) ) $= tauto;
+pub theorem pm2_38 (ph ps ch: wff): $ ( ( ps -> ch ) -> ( ( ps \/ ph ) -> ( ch \/ ph ) ) ) $= tauto;
+pub theorem pm2_36 (ph ps ch: wff): $ ( ( ps -> ch ) -> ( ( ph \/ ps ) -> ( ch \/ ph ) ) ) $= tauto;
+pub theorem pm2_37 (ph ps ch: wff): $ ( ( ps -> ch ) -> ( ( ps \/ ph ) -> ( ph \/ ch ) ) ) $= tauto;
+pub theorem pm2_81 (ph ps ch th: wff): $ ( ( ps -> ( ch -> th ) ) -> ( ( ph \/ ps ) -> ( ( ph \/ ch ) -> ( ph \/ th ) ) ) ) $= tauto;
+pub theorem pm2_8 (ph ps ch: wff): $ ( ( ph \/ ps ) -> ( ( ~ ps \/ ch ) -> ( ph \/ ch ) ) ) $= tauto;
+pub theorem pm2_73 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ( ph \/ ps ) \/ ch ) -> ( ps \/ ch ) ) ) $= tauto;
+pub theorem pm2_74 (ph ps ch: wff): $ ( ( ps -> ph ) -> ( ( ( ph \/ ps ) \/ ch ) -> ( ph \/ ch ) ) ) $= tauto;
+pub theorem pm2_82 (ph ps ch th: wff): $ ( ( ( ph \/ ps ) \/ ch ) -> ( ( ( ph \/ ~ ch ) \/ th ) -> ( ( ph \/ ps ) \/ th ) ) ) $= tauto;
+pub theorem pm4_39 (ph ps ch th: wff): $ ( ( ( ph <-> ch ) /\ ( ps <-> th ) ) -> ( ( ph \/ ps ) <-> ( ch \/ th ) ) ) $= tauto;
+pub theorem animorl (ph ps ch: wff): $ ( ( ph /\ ps ) -> ( ph \/ ch ) ) $= tauto;
+pub theorem animorr (ph ps ch: wff): $ ( ( ph /\ ps ) -> ( ch \/ ps ) ) $= tauto;
+pub theorem animorlr (ph ps ch: wff): $ ( ( ph /\ ps ) -> ( ch \/ ph ) ) $= tauto;
+pub theorem animorrl (ph ps ch: wff): $ ( ( ph /\ ps ) -> ( ps \/ ch ) ) $= tauto;
+pub theorem ianor (ph ps: wff): $ ( ~ ( ph /\ ps ) <-> ( ~ ph \/ ~ ps ) ) $= tauto;
+pub theorem anor (ph ps: wff): $ ( ( ph /\ ps ) <-> ~ ( ~ ph \/ ~ ps ) ) $= tauto;
+pub theorem ioran (ph ps: wff): $ ( ~ ( ph \/ ps ) <-> ( ~ ph /\ ~ ps ) ) $= tauto;
+pub theorem pm4_52 (ph ps: wff): $ ( ( ph /\ ~ ps ) <-> ~ ( ~ ph \/ ps ) ) $= tauto;
+pub theorem pm4_53 (ph ps: wff): $ ( ~ ( ph /\ ~ ps ) <-> ( ~ ph \/ ps ) ) $= tauto;
+pub theorem pm4_54 (ph ps: wff): $ ( ( ~ ph /\ ps ) <-> ~ ( ph \/ ~ ps ) ) $= tauto;
+pub theorem pm4_55 (ph ps: wff): $ ( ~ ( ~ ph /\ ps ) <-> ( ph \/ ~ ps ) ) $= tauto;
+pub theorem pm4_56 (ph ps: wff): $ ( ( ~ ph /\ ~ ps ) <-> ~ ( ph \/ ps ) ) $= tauto;
+pub theorem oran (ph ps: wff): $ ( ( ph \/ ps ) <-> ~ ( ~ ph /\ ~ ps ) ) $= tauto;
+pub theorem pm4_57 (ph ps: wff): $ ( ~ ( ~ ph /\ ~ ps ) <-> ( ph \/ ps ) ) $= tauto;
+pub theorem pm3_1 (ph ps: wff): $ ( ( ph /\ ps ) -> ~ ( ~ ph \/ ~ ps ) ) $= tauto;
+pub theorem pm3_11 (ph ps: wff): $ ( ~ ( ~ ph \/ ~ ps ) -> ( ph /\ ps ) ) $= tauto;
+pub theorem pm3_12 (ph ps: wff): $ ( ( ~ ph \/ ~ ps ) \/ ( ph /\ ps ) ) $= tauto;
+pub theorem pm3_13 (ph ps: wff): $ ( ~ ( ph /\ ps ) -> ( ~ ph \/ ~ ps ) ) $= tauto;
+pub theorem pm3_14 (ph ps: wff): $ ( ( ~ ph \/ ~ ps ) -> ~ ( ph /\ ps ) ) $= tauto;
+pub theorem pm4_44 (ph ps: wff): $ ( ph <-> ( ph \/ ( ph /\ ps ) ) ) $= tauto;
+pub theorem pm4_45 (ph ps: wff): $ ( ph <-> ( ph /\ ( ph \/ ps ) ) ) $= tauto;
+pub theorem orabs (ph ps: wff): $ ( ph <-> ( ( ph \/ ps ) /\ ph ) ) $= tauto;
+pub theorem oranabs (ph ps: wff): $ ( ( ( ph \/ ~ ps ) /\ ps ) <-> ( ph /\ ps ) ) $= tauto;
+pub theorem pm5_61 (ph ps: wff): $ ( ( ( ph \/ ps ) /\ ~ ps ) <-> ( ph /\ ~ ps ) ) $= tauto;
+pub theorem pm5_6 (ph ps ch: wff): $ ( ( ( ph /\ ~ ps ) -> ch ) <-> ( ph -> ( ps \/ ch ) ) ) $= tauto;
+pub theorem pm4_79 (ph ps ch: wff): $ ( ( ( ps -> ph ) \/ ( ch -> ph ) ) <-> ( ( ps /\ ch ) -> ph ) ) $= tauto;
+pub theorem pm5_53 (ph ps ch th: wff): $ ( ( ( ( ph \/ ps ) \/ ch ) -> th ) <-> ( ( ( ph -> th ) /\ ( ps -> th ) ) /\ ( ch -> th ) ) ) $= tauto;
+pub theorem ordi (ph ps ch: wff): $ ( ( ph \/ ( ps /\ ch ) ) <-> ( ( ph \/ ps ) /\ ( ph \/ ch ) ) ) $= tauto;
+pub theorem ordir (ph ps ch: wff): $ ( ( ( ph /\ ps ) \/ ch ) <-> ( ( ph \/ ch ) /\ ( ps \/ ch ) ) ) $= tauto;
+pub theorem andi (ph ps ch: wff): $ ( ( ph /\ ( ps \/ ch ) ) <-> ( ( ph /\ ps ) \/ ( ph /\ ch ) ) ) $= tauto;
+pub theorem andir (ph ps ch: wff): $ ( ( ( ph \/ ps ) /\ ch ) <-> ( ( ph /\ ch ) \/ ( ps /\ ch ) ) ) $= tauto;
+pub theorem orddi (ph ps ch th: wff): $ ( ( ( ph /\ ps ) \/ ( ch /\ th ) ) <-> ( ( ( ph \/ ch ) /\ ( ph \/ th ) ) /\ ( ( ps \/ ch ) /\ ( ps \/ th ) ) ) ) $= tauto;
+pub theorem anddi (ph ps ch th: wff): $ ( ( ( ph \/ ps ) /\ ( ch \/ th ) ) <-> ( ( ( ph /\ ch ) \/ ( ph /\ th ) ) \/ ( ( ps /\ ch ) \/ ( ps /\ th ) ) ) ) $= tauto;
+pub theorem pm5_17 (ph ps: wff): $ ( ( ( ph \/ ps ) /\ ~ ( ph /\ ps ) ) <-> ( ph <-> ~ ps ) ) $= tauto;
+pub theorem pm5_15 (ph ps: wff): $ ( ( ph <-> ps ) \/ ( ph <-> ~ ps ) ) $= tauto;
+pub theorem pm5_16 (ph ps: wff): $ ~ ( ( ph <-> ps ) /\ ( ph <-> ~ ps ) ) $= tauto;
+pub theorem _xor (ph ps: wff): $ ( ~ ( ph <-> ps ) <-> ( ( ph /\ ~ ps ) \/ ( ps /\ ~ ph ) ) ) $= tauto;
+pub theorem nbi2 (ph ps: wff): $ ( ~ ( ph <-> ps ) <-> ( ( ph \/ ps ) /\ ~ ( ph /\ ps ) ) ) $= tauto;
+pub theorem xordi (ph ps ch: wff): $ ( ( ph /\ ~ ( ps <-> ch ) ) <-> ~ ( ( ph /\ ps ) <-> ( ph /\ ch ) ) ) $= tauto;
+pub theorem pm5_54 (ph ps: wff): $ ( ( ( ph /\ ps ) <-> ph ) \/ ( ( ph /\ ps ) <-> ps ) ) $= tauto;
+pub theorem pm5_62 (ph ps: wff): $ ( ( ( ph /\ ps ) \/ ~ ps ) <-> ( ph \/ ~ ps ) ) $= tauto;
+pub theorem pm5_63 (ph ps: wff): $ ( ( ph \/ ps ) <-> ( ph \/ ( ~ ph /\ ps ) ) ) $= tauto;
+pub theorem pm4_43 (ph ps: wff): $ ( ph <-> ( ( ph \/ ps ) /\ ( ph \/ ~ ps ) ) ) $= tauto;
+pub theorem pm4_82 (ph ps: wff): $ ( ( ( ph -> ps ) /\ ( ph -> ~ ps ) ) <-> ~ ph ) $= tauto;
+pub theorem pm4_83 (ph ps: wff): $ ( ( ( ph -> ps ) /\ ( ~ ph -> ps ) ) <-> ps ) $= tauto;
+pub theorem pclem6 (ph ps: wff): $ ( ( ph <-> ( ps /\ ~ ph ) ) -> ~ ps ) $= tauto;
+pub theorem bigolden (ph ps: wff): $ ( ( ( ph /\ ps ) <-> ph ) <-> ( ps <-> ( ph \/ ps ) ) ) $= tauto;
+pub theorem pm5_71 (ph ps ch: wff): $ ( ( ps -> ~ ch ) -> ( ( ( ph \/ ps ) /\ ch ) <-> ( ph /\ ch ) ) ) $= tauto;
+pub theorem pm5_75 (ph ps ch: wff): $ ( ( ( ch -> ~ ps ) /\ ( ph <-> ( ps \/ ch ) ) ) -> ( ( ph /\ ~ ps ) <-> ch ) ) $= tauto;
+pub theorem dedlem0a (ph ps ch: wff): $ ( ph -> ( ps <-> ( ( ch -> ph ) -> ( ps /\ ph ) ) ) ) $= tauto;
+pub theorem dedlem0b (ph ps ch: wff): $ ( ~ ph -> ( ps <-> ( ( ps -> ph ) -> ( ch /\ ph ) ) ) ) $= tauto;
+pub theorem dedlema (ph ps ch: wff): $ ( ph -> ( ps <-> ( ( ps /\ ph ) \/ ( ch /\ ~ ph ) ) ) ) $= tauto;
+pub theorem dedlemb (ph ps ch: wff): $ ( ~ ph -> ( ch <-> ( ( ps /\ ph ) \/ ( ch /\ ~ ph ) ) ) ) $= tauto;
+pub theorem cases2 (ph ps ch: wff): $ ( ( ( ph /\ ps ) \/ ( ~ ph /\ ch ) ) <-> ( ( ph -> ps ) /\ ( ~ ph -> ch ) ) ) $= tauto;
+pub theorem dfbi3 (ph ps: wff): $ ( ( ph <-> ps ) <-> ( ( ph /\ ps ) \/ ( ~ ph /\ ~ ps ) ) ) $= tauto;
+pub theorem pm5_24 (ph ps: wff): $ ( ~ ( ( ph /\ ps ) \/ ( ~ ph /\ ~ ps ) ) <-> ( ( ph /\ ~ ps ) \/ ( ps /\ ~ ph ) ) ) $= tauto;
+pub theorem _4exmid (ph ps: wff): $ ( ( ( ph /\ ps ) \/ ( ~ ph /\ ~ ps ) ) \/ ( ( ph /\ ~ ps ) \/ ( ps /\ ~ ph ) ) ) $= tauto;
+pub theorem consensus (ph ps ch: wff): $ ( ( ( ( ph /\ ps ) \/ ( ~ ph /\ ch ) ) \/ ( ps /\ ch ) ) <-> ( ( ph /\ ps ) \/ ( ~ ph /\ ch ) ) ) $= tauto;
+pub theorem pm4_42 (ph ps: wff): $ ( ph <-> ( ( ph /\ ps ) \/ ( ph /\ ~ ps ) ) ) $= tauto;
+pub theorem prlem2 (ph ps ch th: wff): $ ( ( ( ph /\ ps ) \/ ( ch /\ th ) ) <-> ( ( ph \/ ch ) /\ ( ( ph /\ ps ) \/ ( ch /\ th ) ) ) ) $= tauto;
+pub theorem dn1 (ph ps ch th: wff): $ ( ~ ( ~ ( ~ ( ph \/ ps ) \/ ch ) \/ ~ ( ph \/ ~ ( ~ ch \/ ~ ( ch \/ th ) ) ) ) <-> ch ) $= tauto;
+pub theorem bianir (ph ps: wff): $ ( ( ph /\ ( ps <-> ph ) ) -> ps ) $= tauto;
+pub theorem ornld (ph th ta: wff): $ ( ph -> ( ( ( ph -> ( th \/ ta ) ) /\ ~ th ) -> ta ) ) $= tauto;
+
+pub theorem df_ifp (ph ps ch: wff): $ ( ifp ph ps ch <-> ( ( ph /\ ps ) \/ ( ~ ph /\ ch ) ) ) $= tauto;
+pub theorem dfifp2 (ph ps ch: wff): $ ( ifp ph ps ch <-> ( ( ph -> ps ) /\ ( ~ ph -> ch ) ) ) $= tauto;
+pub theorem dfifp3 (ph ps ch: wff): $ ( ifp ph ps ch <-> ( ( ph -> ps ) /\ ( ph \/ ch ) ) ) $= tauto;
+pub theorem dfifp4 (ph ps ch: wff): $ ( ifp ph ps ch <-> ( ( ~ ph \/ ps ) /\ ( ph \/ ch ) ) ) $= tauto;
+pub theorem dfifp5 (ph ps ch: wff): $ ( ifp ph ps ch <-> ( ( ~ ph \/ ps ) /\ ( ~ ph -> ch ) ) ) $= tauto;
+pub theorem dfifp6 (ph ps ch: wff): $ ( ifp ph ps ch <-> ( ( ph /\ ps ) \/ ~ ( ch -> ph ) ) ) $= tauto;
+pub theorem dfifp7 (ph ps ch: wff): $ ( ifp ph ps ch <-> ( ( ch -> ph ) -> ( ph /\ ps ) ) ) $= tauto;
+pub theorem ifpdfbi (ph ps: wff): $ ( ( ph <-> ps ) <-> ifp ph ps (~ps) ) $= tauto;
+pub theorem anifp (ph ps ch: wff): $ ( ( ps /\ ch ) -> ifp ph ps ch ) $= tauto;
+pub theorem ifpor (ph ps ch: wff): $ ( ifp ph ps ch -> ( ps \/ ch ) ) $= tauto;
+pub theorem ifpn (ph ps ch: wff): $ ( ifp ph ps ch <-> ifp (~ph) ch ps ) $= tauto;
+pub theorem ifptru (ph ps ch: wff): $ ( ph -> ( ifp ph ps ch <-> ps ) ) $= tauto;
+pub theorem ifpfal (ph ps ch: wff): $ ( ~ ph -> ( ifp ph ps ch <-> ch ) ) $= tauto;
+pub theorem ifpid (ph ps: wff): $ ( ifp ph ps ps <-> ps ) $= tauto;
+
+pub theorem df_3or (ph ps ch: wff): $ ( ( ph \/ ps \/ ch ) <-> ( ( ph \/ ps ) \/ ch ) ) $= tauto;
+pub theorem df_3an (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) <-> ( ( ph /\ ps ) /\ ch ) ) $= tauto;
+pub theorem _3orass (ph ps ch: wff): $ ( ( ph \/ ps \/ ch ) <-> ( ph \/ ( ps \/ ch ) ) ) $= tauto;
+pub theorem _3orel1 (ph ps ch: wff): $ ( ~ ph -> ( ( ph \/ ps \/ ch ) -> ( ps \/ ch ) ) ) $= tauto;
+pub theorem _3orrot (ph ps ch: wff): $ ( ( ph \/ ps \/ ch ) <-> ( ps \/ ch \/ ph ) ) $= tauto;
+pub theorem _3orcoma (ph ps ch: wff): $ ( ( ph \/ ps \/ ch ) <-> ( ps \/ ph \/ ch ) ) $= tauto;
+pub theorem _3orcomb (ph ps ch: wff): $ ( ( ph \/ ps \/ ch ) <-> ( ph \/ ch \/ ps ) ) $= tauto;
+pub theorem _3anass (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) <-> ( ph /\ ( ps /\ ch ) ) ) $= tauto;
+pub theorem _3anan12 (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) <-> ( ps /\ ( ph /\ ch ) ) ) $= tauto;
+pub theorem _3anan32 (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) <-> ( ( ph /\ ch ) /\ ps ) ) $= tauto;
+pub theorem _3ancoma (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) <-> ( ps /\ ph /\ ch ) ) $= tauto;
+pub theorem _3ancomb (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) <-> ( ph /\ ch /\ ps ) ) $= tauto;
+pub theorem _3anrot (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) <-> ( ps /\ ch /\ ph ) ) $= tauto;
+pub theorem _3anrev (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) <-> ( ch /\ ps /\ ph ) ) $= tauto;
+pub theorem anandi3 (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) <-> ( ( ph /\ ps ) /\ ( ph /\ ch ) ) ) $= tauto;
+pub theorem anandi3r (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) <-> ( ( ph /\ ps ) /\ ( ch /\ ps ) ) ) $= tauto;
+pub theorem _3anidm (ph: wff): $ ( ( ph /\ ph /\ ph ) <-> ph ) $= tauto;
+pub theorem _3an4anass (ph ps ch th: wff): $ ( ( ( ph /\ ps /\ ch ) /\ th ) <-> ( ( ph /\ ps ) /\ ( ch /\ th ) ) ) $= tauto;
+pub theorem _3ioran (ph ps ch: wff): $ ( ~ ( ph \/ ps \/ ch ) <-> ( ~ ph /\ ~ ps /\ ~ ch ) ) $= tauto;
+pub theorem _3ianor (ph ps ch: wff): $ ( ~ ( ph /\ ps /\ ch ) <-> ( ~ ph \/ ~ ps \/ ~ ch ) ) $= tauto;
+pub theorem _3anor (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) <-> ~ ( ~ ph \/ ~ ps \/ ~ ch ) ) $= tauto;
+pub theorem _3oran (ph ps ch: wff): $ ( ( ph \/ ps \/ ch ) <-> ~ ( ~ ph /\ ~ ps /\ ~ ch ) ) $= tauto;
+pub theorem simp1 (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) -> ph ) $= tauto;
+pub theorem simp2 (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) -> ps ) $= tauto;
+pub theorem simp3 (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) -> ch ) $= tauto;
+pub theorem _3simpa (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) -> ( ph /\ ps ) ) $= tauto;
+pub theorem _3simpb (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) -> ( ph /\ ch ) ) $= tauto;
+pub theorem _3simpc (ph ps ch: wff): $ ( ( ph /\ ps /\ ch ) -> ( ps /\ ch ) ) $= tauto;
+pub theorem simpl1 (ph ps ch th: wff): $ ( ( ( ph /\ ps /\ ch ) /\ th ) -> ph ) $= tauto;
+pub theorem simpl2 (ph ps ch th: wff): $ ( ( ( ph /\ ps /\ ch ) /\ th ) -> ps ) $= tauto;
+pub theorem simpl3 (ph ps ch th: wff): $ ( ( ( ph /\ ps /\ ch ) /\ th ) -> ch ) $= tauto;
+pub theorem simpr1 (ph ps ch th: wff): $ ( ( ph /\ ( ps /\ ch /\ th ) ) -> ps ) $= tauto;
+pub theorem simpr2 (ph ps ch th: wff): $ ( ( ph /\ ( ps /\ ch /\ th ) ) -> ch ) $= tauto;
+pub theorem simpr3 (ph ps ch th: wff): $ ( ( ph /\ ( ps /\ ch /\ th ) ) -> th ) $= tauto;
+pub theorem simp1l (ph ps ch th: wff): $ ( ( ( ph /\ ps ) /\ ch /\ th ) -> ph ) $= tauto;
+pub theorem simp1r (ph ps ch th: wff): $ ( ( ( ph /\ ps ) /\ ch /\ th ) -> ps ) $= tauto;
+pub theorem simp2l (ph ps ch th: wff): $ ( ( ph /\ ( ps /\ ch ) /\ th ) -> ps ) $= tauto;
+pub theorem simp2r (ph ps ch th: wff): $ ( ( ph /\ ( ps /\ ch ) /\ th ) -> ch ) $= tauto;
+pub theorem simp3l (ph ps ch th: wff): $ ( ( ph /\ ps /\ ( ch /\ th ) ) -> ch ) $= tauto;
+pub theorem simp3r (ph ps ch th: wff): $ ( ( ph /\ ps /\ ( ch /\ th ) ) -> th ) $= tauto;
+pub theorem simp11 (ph ps ch th ta: wff): $ ( ( ( ph /\ ps /\ ch ) /\ th /\ ta ) -> ph ) $= tauto;
+pub theorem simp12 (ph ps ch th ta: wff): $ ( ( ( ph /\ ps /\ ch ) /\ th /\ ta ) -> ps ) $= tauto;
+pub theorem simp13 (ph ps ch th ta: wff): $ ( ( ( ph /\ ps /\ ch ) /\ th /\ ta ) -> ch ) $= tauto;
+pub theorem simp21 (ph ps ch th ta: wff): $ ( ( ph /\ ( ps /\ ch /\ th ) /\ ta ) -> ps ) $= tauto;
+pub theorem simp22 (ph ps ch th ta: wff): $ ( ( ph /\ ( ps /\ ch /\ th ) /\ ta ) -> ch ) $= tauto;
+pub theorem simp23 (ph ps ch th ta: wff): $ ( ( ph /\ ( ps /\ ch /\ th ) /\ ta ) -> th ) $= tauto;
+pub theorem simp31 (ph ps ch th ta: wff): $ ( ( ph /\ ps /\ ( ch /\ th /\ ta ) ) -> ch ) $= tauto;
+pub theorem simp32 (ph ps ch th ta: wff): $ ( ( ph /\ ps /\ ( ch /\ th /\ ta ) ) -> th ) $= tauto;
+pub theorem simp33 (ph ps ch th ta: wff): $ ( ( ph /\ ps /\ ( ch /\ th /\ ta ) ) -> ta ) $= tauto;
+pub theorem simpll1 (ph ps ch th ta: wff): $ ( ( ( ( ph /\ ps /\ ch ) /\ th ) /\ ta ) -> ph ) $= tauto;
+pub theorem simpll2 (ph ps ch th ta: wff): $ ( ( ( ( ph /\ ps /\ ch ) /\ th ) /\ ta ) -> ps ) $= tauto;
+pub theorem simpll3 (ph ps ch th ta: wff): $ ( ( ( ( ph /\ ps /\ ch ) /\ th ) /\ ta ) -> ch ) $= tauto;
+pub theorem simplr1 (ph ps ch th ta: wff): $ ( ( ( th /\ ( ph /\ ps /\ ch ) ) /\ ta ) -> ph ) $= tauto;
+pub theorem simplr2 (ph ps ch th ta: wff): $ ( ( ( th /\ ( ph /\ ps /\ ch ) ) /\ ta ) -> ps ) $= tauto;
+pub theorem simplr3 (ph ps ch th ta: wff): $ ( ( ( th /\ ( ph /\ ps /\ ch ) ) /\ ta ) -> ch ) $= tauto;
+pub theorem simprl1 (ph ps ch th ta: wff): $ ( ( ta /\ ( ( ph /\ ps /\ ch ) /\ th ) ) -> ph ) $= tauto;
+pub theorem simprl2 (ph ps ch th ta: wff): $ ( ( ta /\ ( ( ph /\ ps /\ ch ) /\ th ) ) -> ps ) $= tauto;
+pub theorem simprl3 (ph ps ch th ta: wff): $ ( ( ta /\ ( ( ph /\ ps /\ ch ) /\ th ) ) -> ch ) $= tauto;
+pub theorem simprr1 (ph ps ch th ta: wff): $ ( ( ta /\ ( th /\ ( ph /\ ps /\ ch ) ) ) -> ph ) $= tauto;
+pub theorem simprr2 (ph ps ch th ta: wff): $ ( ( ta /\ ( th /\ ( ph /\ ps /\ ch ) ) ) -> ps ) $= tauto;
+pub theorem simprr3 (ph ps ch th ta: wff): $ ( ( ta /\ ( th /\ ( ph /\ ps /\ ch ) ) ) -> ch ) $= tauto;
+pub theorem simpl1l (ph ps ch th ta: wff): $ ( ( ( ( ph /\ ps ) /\ ch /\ th ) /\ ta ) -> ph ) $= tauto;
+pub theorem simpl1r (ph ps ch th ta: wff): $ ( ( ( ( ph /\ ps ) /\ ch /\ th ) /\ ta ) -> ps ) $= tauto;
+pub theorem simpl2l (ph ps ch th ta: wff): $ ( ( ( ch /\ ( ph /\ ps ) /\ th ) /\ ta ) -> ph ) $= tauto;
+pub theorem simpl2r (ph ps ch th ta: wff): $ ( ( ( ch /\ ( ph /\ ps ) /\ th ) /\ ta ) -> ps ) $= tauto;
+pub theorem simpl3l (ph ps ch th ta: wff): $ ( ( ( ch /\ th /\ ( ph /\ ps ) ) /\ ta ) -> ph ) $= tauto;
+pub theorem simpl3r (ph ps ch th ta: wff): $ ( ( ( ch /\ th /\ ( ph /\ ps ) ) /\ ta ) -> ps ) $= tauto;
+pub theorem simpr1l (ph ps ch th ta: wff): $ ( ( ta /\ ( ( ph /\ ps ) /\ ch /\ th ) ) -> ph ) $= tauto;
+pub theorem simpr1r (ph ps ch th ta: wff): $ ( ( ta /\ ( ( ph /\ ps ) /\ ch /\ th ) ) -> ps ) $= tauto;
+pub theorem simpr2l (ph ps ch th ta: wff): $ ( ( ta /\ ( ch /\ ( ph /\ ps ) /\ th ) ) -> ph ) $= tauto;
+pub theorem simpr2r (ph ps ch th ta: wff): $ ( ( ta /\ ( ch /\ ( ph /\ ps ) /\ th ) ) -> ps ) $= tauto;
+pub theorem simpr3l (ph ps ch th ta: wff): $ ( ( ta /\ ( ch /\ th /\ ( ph /\ ps ) ) ) -> ph ) $= tauto;
+pub theorem simpr3r (ph ps ch th ta: wff): $ ( ( ta /\ ( ch /\ th /\ ( ph /\ ps ) ) ) -> ps ) $= tauto;
+pub theorem simp1ll (ph ps ch th ta: wff): $ ( ( ( ( ph /\ ps ) /\ ch ) /\ th /\ ta ) -> ph ) $= tauto;
+pub theorem simp1lr (ph ps ch th ta: wff): $ ( ( ( ( ph /\ ps ) /\ ch ) /\ th /\ ta ) -> ps ) $= tauto;
+pub theorem simp1rl (ph ps ch th ta: wff): $ ( ( ( ch /\ ( ph /\ ps ) ) /\ th /\ ta ) -> ph ) $= tauto;
+pub theorem simp1rr (ph ps ch th ta: wff): $ ( ( ( ch /\ ( ph /\ ps ) ) /\ th /\ ta ) -> ps ) $= tauto;
+pub theorem simp2ll (ph ps ch th ta: wff): $ ( ( th /\ ( ( ph /\ ps ) /\ ch ) /\ ta ) -> ph ) $= tauto;
+pub theorem simp2lr (ph ps ch th ta: wff): $ ( ( th /\ ( ( ph /\ ps ) /\ ch ) /\ ta ) -> ps ) $= tauto;
+pub theorem simp2rl (ph ps ch th ta: wff): $ ( ( th /\ ( ch /\ ( ph /\ ps ) ) /\ ta ) -> ph ) $= tauto;
+pub theorem simp2rr (ph ps ch th ta: wff): $ ( ( th /\ ( ch /\ ( ph /\ ps ) ) /\ ta ) -> ps ) $= tauto;
+pub theorem simp3ll (ph ps ch th ta: wff): $ ( ( th /\ ta /\ ( ( ph /\ ps ) /\ ch ) ) -> ph ) $= tauto;
+pub theorem simp3lr (ph ps ch th ta: wff): $ ( ( th /\ ta /\ ( ( ph /\ ps ) /\ ch ) ) -> ps ) $= tauto;
+pub theorem simp3rl (ph ps ch th ta: wff): $ ( ( th /\ ta /\ ( ch /\ ( ph /\ ps ) ) ) -> ph ) $= tauto;
+pub theorem simp3rr (ph ps ch th ta: wff): $ ( ( th /\ ta /\ ( ch /\ ( ph /\ ps ) ) ) -> ps ) $= tauto;
+pub theorem simpl11 (ph ps ch th ta et: wff): $ ( ( ( ( ph /\ ps /\ ch ) /\ th /\ ta ) /\ et ) -> ph ) $= tauto;
+pub theorem simpl12 (ph ps ch th ta et: wff): $ ( ( ( ( ph /\ ps /\ ch ) /\ th /\ ta ) /\ et ) -> ps ) $= tauto;
+pub theorem simpl13 (ph ps ch th ta et: wff): $ ( ( ( ( ph /\ ps /\ ch ) /\ th /\ ta ) /\ et ) -> ch ) $= tauto;
+pub theorem simpl21 (ph ps ch th ta et: wff): $ ( ( ( th /\ ( ph /\ ps /\ ch ) /\ ta ) /\ et ) -> ph ) $= tauto;
+pub theorem simpl22 (ph ps ch th ta et: wff): $ ( ( ( th /\ ( ph /\ ps /\ ch ) /\ ta ) /\ et ) -> ps ) $= tauto;
+pub theorem simpl23 (ph ps ch th ta et: wff): $ ( ( ( th /\ ( ph /\ ps /\ ch ) /\ ta ) /\ et ) -> ch ) $= tauto;
+pub theorem simpl31 (ph ps ch th ta et: wff): $ ( ( ( th /\ ta /\ ( ph /\ ps /\ ch ) ) /\ et ) -> ph ) $= tauto;
+pub theorem simpl32 (ph ps ch th ta et: wff): $ ( ( ( th /\ ta /\ ( ph /\ ps /\ ch ) ) /\ et ) -> ps ) $= tauto;
+pub theorem simpl33 (ph ps ch th ta et: wff): $ ( ( ( th /\ ta /\ ( ph /\ ps /\ ch ) ) /\ et ) -> ch ) $= tauto;
+pub theorem simpr11 (ph ps ch th ta et: wff): $ ( ( et /\ ( ( ph /\ ps /\ ch ) /\ th /\ ta ) ) -> ph ) $= tauto;
+pub theorem simpr12 (ph ps ch th ta et: wff): $ ( ( et /\ ( ( ph /\ ps /\ ch ) /\ th /\ ta ) ) -> ps ) $= tauto;
+pub theorem simpr13 (ph ps ch th ta et: wff): $ ( ( et /\ ( ( ph /\ ps /\ ch ) /\ th /\ ta ) ) -> ch ) $= tauto;
+pub theorem simpr21 (ph ps ch th ta et: wff): $ ( ( et /\ ( th /\ ( ph /\ ps /\ ch ) /\ ta ) ) -> ph ) $= tauto;
+pub theorem simpr22 (ph ps ch th ta et: wff): $ ( ( et /\ ( th /\ ( ph /\ ps /\ ch ) /\ ta ) ) -> ps ) $= tauto;
+pub theorem simpr23 (ph ps ch th ta et: wff): $ ( ( et /\ ( th /\ ( ph /\ ps /\ ch ) /\ ta ) ) -> ch ) $= tauto;
+pub theorem simpr31 (ph ps ch th ta et: wff): $ ( ( et /\ ( th /\ ta /\ ( ph /\ ps /\ ch ) ) ) -> ph ) $= tauto;
+pub theorem simpr32 (ph ps ch th ta et: wff): $ ( ( et /\ ( th /\ ta /\ ( ph /\ ps /\ ch ) ) ) -> ps ) $= tauto;
+pub theorem simpr33 (ph ps ch th ta et: wff): $ ( ( et /\ ( th /\ ta /\ ( ph /\ ps /\ ch ) ) ) -> ch ) $= tauto;
+pub theorem simp1l1 (ph ps ch th ta et: wff): $ ( ( ( ( ph /\ ps /\ ch ) /\ th ) /\ ta /\ et ) -> ph ) $= tauto;
+pub theorem simp1l2 (ph ps ch th ta et: wff): $ ( ( ( ( ph /\ ps /\ ch ) /\ th ) /\ ta /\ et ) -> ps ) $= tauto;
+pub theorem simp1l3 (ph ps ch th ta et: wff): $ ( ( ( ( ph /\ ps /\ ch ) /\ th ) /\ ta /\ et ) -> ch ) $= tauto;
+pub theorem simp1r1 (ph ps ch th ta et: wff): $ ( ( ( th /\ ( ph /\ ps /\ ch ) ) /\ ta /\ et ) -> ph ) $= tauto;
+pub theorem simp1r2 (ph ps ch th ta et: wff): $ ( ( ( th /\ ( ph /\ ps /\ ch ) ) /\ ta /\ et ) -> ps ) $= tauto;
+pub theorem simp1r3 (ph ps ch th ta et: wff): $ ( ( ( th /\ ( ph /\ ps /\ ch ) ) /\ ta /\ et ) -> ch ) $= tauto;
+pub theorem simp2l1 (ph ps ch th ta et: wff): $ ( ( ta /\ ( ( ph /\ ps /\ ch ) /\ th ) /\ et ) -> ph ) $= tauto;
+pub theorem simp2l2 (ph ps ch th ta et: wff): $ ( ( ta /\ ( ( ph /\ ps /\ ch ) /\ th ) /\ et ) -> ps ) $= tauto;
+pub theorem simp2l3 (ph ps ch th ta et: wff): $ ( ( ta /\ ( ( ph /\ ps /\ ch ) /\ th ) /\ et ) -> ch ) $= tauto;
+pub theorem simp2r1 (ph ps ch th ta et: wff): $ ( ( ta /\ ( th /\ ( ph /\ ps /\ ch ) ) /\ et ) -> ph ) $= tauto;
+pub theorem simp2r2 (ph ps ch th ta et: wff): $ ( ( ta /\ ( th /\ ( ph /\ ps /\ ch ) ) /\ et ) -> ps ) $= tauto;
+pub theorem simp2r3 (ph ps ch th ta et: wff): $ ( ( ta /\ ( th /\ ( ph /\ ps /\ ch ) ) /\ et ) -> ch ) $= tauto;
+pub theorem simp3l1 (ph ps ch th ta et: wff): $ ( ( ta /\ et /\ ( ( ph /\ ps /\ ch ) /\ th ) ) -> ph ) $= tauto;
+pub theorem simp3l2 (ph ps ch th ta et: wff): $ ( ( ta /\ et /\ ( ( ph /\ ps /\ ch ) /\ th ) ) -> ps ) $= tauto;
+pub theorem simp3l3 (ph ps ch th ta et: wff): $ ( ( ta /\ et /\ ( ( ph /\ ps /\ ch ) /\ th ) ) -> ch ) $= tauto;
+pub theorem simp3r1 (ph ps ch th ta et: wff): $ ( ( ta /\ et /\ ( th /\ ( ph /\ ps /\ ch ) ) ) -> ph ) $= tauto;
+pub theorem simp3r2 (ph ps ch th ta et: wff): $ ( ( ta /\ et /\ ( th /\ ( ph /\ ps /\ ch ) ) ) -> ps ) $= tauto;
+pub theorem simp3r3 (ph ps ch th ta et: wff): $ ( ( ta /\ et /\ ( th /\ ( ph /\ ps /\ ch ) ) ) -> ch ) $= tauto;
+pub theorem simp11l (ph ps ch th ta et: wff): $ ( ( ( ( ph /\ ps ) /\ ch /\ th ) /\ ta /\ et ) -> ph ) $= tauto;
+pub theorem simp11r (ph ps ch th ta et: wff): $ ( ( ( ( ph /\ ps ) /\ ch /\ th ) /\ ta /\ et ) -> ps ) $= tauto;
+pub theorem simp12l (ph ps ch th ta et: wff): $ ( ( ( ch /\ ( ph /\ ps ) /\ th ) /\ ta /\ et ) -> ph ) $= tauto;
+pub theorem simp12r (ph ps ch th ta et: wff): $ ( ( ( ch /\ ( ph /\ ps ) /\ th ) /\ ta /\ et ) -> ps ) $= tauto;
+pub theorem simp13l (ph ps ch th ta et: wff): $ ( ( ( ch /\ th /\ ( ph /\ ps ) ) /\ ta /\ et ) -> ph ) $= tauto;
+pub theorem simp13r (ph ps ch th ta et: wff): $ ( ( ( ch /\ th /\ ( ph /\ ps ) ) /\ ta /\ et ) -> ps ) $= tauto;
+pub theorem simp21l (ph ps ch th ta et: wff): $ ( ( ta /\ ( ( ph /\ ps ) /\ ch /\ th ) /\ et ) -> ph ) $= tauto;
+pub theorem simp21r (ph ps ch th ta et: wff): $ ( ( ta /\ ( ( ph /\ ps ) /\ ch /\ th ) /\ et ) -> ps ) $= tauto;
+pub theorem simp22l (ph ps ch th ta et: wff): $ ( ( ta /\ ( ch /\ ( ph /\ ps ) /\ th ) /\ et ) -> ph ) $= tauto;
+pub theorem simp22r (ph ps ch th ta et: wff): $ ( ( ta /\ ( ch /\ ( ph /\ ps ) /\ th ) /\ et ) -> ps ) $= tauto;
+pub theorem simp23l (ph ps ch th ta et: wff): $ ( ( ta /\ ( ch /\ th /\ ( ph /\ ps ) ) /\ et ) -> ph ) $= tauto;
+pub theorem simp23r (ph ps ch th ta et: wff): $ ( ( ta /\ ( ch /\ th /\ ( ph /\ ps ) ) /\ et ) -> ps ) $= tauto;
+pub theorem simp31l (ph ps ch th ta et: wff): $ ( ( ta /\ et /\ ( ( ph /\ ps ) /\ ch /\ th ) ) -> ph ) $= tauto;
+pub theorem simp31r (ph ps ch th ta et: wff): $ ( ( ta /\ et /\ ( ( ph /\ ps ) /\ ch /\ th ) ) -> ps ) $= tauto;
+pub theorem simp32l (ph ps ch th ta et: wff): $ ( ( ta /\ et /\ ( ch /\ ( ph /\ ps ) /\ th ) ) -> ph ) $= tauto;
+pub theorem simp32r (ph ps ch th ta et: wff): $ ( ( ta /\ et /\ ( ch /\ ( ph /\ ps ) /\ th ) ) -> ps ) $= tauto;
+pub theorem simp33l (ph ps ch th ta et: wff): $ ( ( ta /\ et /\ ( ch /\ th /\ ( ph /\ ps ) ) ) -> ph ) $= tauto;
+pub theorem simp33r (ph ps ch th ta et: wff): $ ( ( ta /\ et /\ ( ch /\ th /\ ( ph /\ ps ) ) ) -> ps ) $= tauto;
+pub theorem simp111 (ph ps ch th ta et ze: wff): $ ( ( ( ( ph /\ ps /\ ch ) /\ th /\ ta ) /\ et /\ ze ) -> ph ) $= tauto;
+pub theorem simp112 (ph ps ch th ta et ze: wff): $ ( ( ( ( ph /\ ps /\ ch ) /\ th /\ ta ) /\ et /\ ze ) -> ps ) $= tauto;
+pub theorem simp113 (ph ps ch th ta et ze: wff): $ ( ( ( ( ph /\ ps /\ ch ) /\ th /\ ta ) /\ et /\ ze ) -> ch ) $= tauto;
+pub theorem simp121 (ph ps ch th ta et ze: wff): $ ( ( ( th /\ ( ph /\ ps /\ ch ) /\ ta ) /\ et /\ ze ) -> ph ) $= tauto;
+pub theorem simp122 (ph ps ch th ta et ze: wff): $ ( ( ( th /\ ( ph /\ ps /\ ch ) /\ ta ) /\ et /\ ze ) -> ps ) $= tauto;
+pub theorem simp123 (ph ps ch th ta et ze: wff): $ ( ( ( th /\ ( ph /\ ps /\ ch ) /\ ta ) /\ et /\ ze ) -> ch ) $= tauto;
+pub theorem simp131 (ph ps ch th ta et ze: wff): $ ( ( ( th /\ ta /\ ( ph /\ ps /\ ch ) ) /\ et /\ ze ) -> ph ) $= tauto;
+pub theorem simp132 (ph ps ch th ta et ze: wff): $ ( ( ( th /\ ta /\ ( ph /\ ps /\ ch ) ) /\ et /\ ze ) -> ps ) $= tauto;
+pub theorem simp133 (ph ps ch th ta et ze: wff): $ ( ( ( th /\ ta /\ ( ph /\ ps /\ ch ) ) /\ et /\ ze ) -> ch ) $= tauto;
+pub theorem simp211 (ph ps ch th ta et ze: wff): $ ( ( et /\ ( ( ph /\ ps /\ ch ) /\ th /\ ta ) /\ ze ) -> ph ) $= tauto;
+pub theorem simp212 (ph ps ch th ta et ze: wff): $ ( ( et /\ ( ( ph /\ ps /\ ch ) /\ th /\ ta ) /\ ze ) -> ps ) $= tauto;
+pub theorem simp213 (ph ps ch th ta et ze: wff): $ ( ( et /\ ( ( ph /\ ps /\ ch ) /\ th /\ ta ) /\ ze ) -> ch ) $= tauto;
+pub theorem simp221 (ph ps ch th ta et ze: wff): $ ( ( et /\ ( th /\ ( ph /\ ps /\ ch ) /\ ta ) /\ ze ) -> ph ) $= tauto;
+pub theorem simp222 (ph ps ch th ta et ze: wff): $ ( ( et /\ ( th /\ ( ph /\ ps /\ ch ) /\ ta ) /\ ze ) -> ps ) $= tauto;
+pub theorem simp223 (ph ps ch th ta et ze: wff): $ ( ( et /\ ( th /\ ( ph /\ ps /\ ch ) /\ ta ) /\ ze ) -> ch ) $= tauto;
+pub theorem simp231 (ph ps ch th ta et ze: wff): $ ( ( et /\ ( th /\ ta /\ ( ph /\ ps /\ ch ) ) /\ ze ) -> ph ) $= tauto;
+pub theorem simp232 (ph ps ch th ta et ze: wff): $ ( ( et /\ ( th /\ ta /\ ( ph /\ ps /\ ch ) ) /\ ze ) -> ps ) $= tauto;
+pub theorem simp233 (ph ps ch th ta et ze: wff): $ ( ( et /\ ( th /\ ta /\ ( ph /\ ps /\ ch ) ) /\ ze ) -> ch ) $= tauto;
+pub theorem simp311 (ph ps ch th ta et ze: wff): $ ( ( et /\ ze /\ ( ( ph /\ ps /\ ch ) /\ th /\ ta ) ) -> ph ) $= tauto;
+pub theorem simp312 (ph ps ch th ta et ze: wff): $ ( ( et /\ ze /\ ( ( ph /\ ps /\ ch ) /\ th /\ ta ) ) -> ps ) $= tauto;
+pub theorem simp313 (ph ps ch th ta et ze: wff): $ ( ( et /\ ze /\ ( ( ph /\ ps /\ ch ) /\ th /\ ta ) ) -> ch ) $= tauto;
+pub theorem simp321 (ph ps ch th ta et ze: wff): $ ( ( et /\ ze /\ ( th /\ ( ph /\ ps /\ ch ) /\ ta ) ) -> ph ) $= tauto;
+pub theorem simp322 (ph ps ch th ta et ze: wff): $ ( ( et /\ ze /\ ( th /\ ( ph /\ ps /\ ch ) /\ ta ) ) -> ps ) $= tauto;
+pub theorem simp323 (ph ps ch th ta et ze: wff): $ ( ( et /\ ze /\ ( th /\ ( ph /\ ps /\ ch ) /\ ta ) ) -> ch ) $= tauto;
+pub theorem simp331 (ph ps ch th ta et ze: wff): $ ( ( et /\ ze /\ ( th /\ ta /\ ( ph /\ ps /\ ch ) ) ) -> ph ) $= tauto;
+pub theorem simp332 (ph ps ch th ta et ze: wff): $ ( ( et /\ ze /\ ( th /\ ta /\ ( ph /\ ps /\ ch ) ) ) -> ps ) $= tauto;
+pub theorem simp333 (ph ps ch th ta et ze: wff): $ ( ( et /\ ze /\ ( th /\ ta /\ ( ph /\ ps /\ ch ) ) ) -> ch ) $= tauto;
+pub theorem _3mix1 (ph ps ch: wff): $ ( ph -> ( ph \/ ps \/ ch ) ) $= tauto;
+pub theorem _3mix2 (ph ps ch: wff): $ ( ph -> ( ps \/ ph \/ ch ) ) $= tauto;
+pub theorem _3mix3 (ph ps ch: wff): $ ( ph -> ( ps \/ ch \/ ph ) ) $= tauto;
+pub theorem pm3_2an3 (ph ps ch: wff): $ ( ph -> ( ps -> ( ch -> ( ph /\ ps /\ ch ) ) ) ) $= tauto;
+pub theorem _3impexp (ph ps ch th: wff): $ ( ( ( ph /\ ps /\ ch ) -> th ) <-> ( ph -> ( ps -> ( ch -> th ) ) ) ) $= tauto;
+pub theorem _4anpull2 (ph ps ch th: wff): $ ( ( ( ph /\ ps ) /\ ( ch /\ th ) ) <-> ( ( ph /\ ch /\ th ) /\ ps ) ) $= tauto;
+pub theorem _3jao (ph ps ch th: wff): $ ( ( ( ph -> ps ) /\ ( ch -> ps ) /\ ( th -> ps ) ) -> ( ( ph \/ ch \/ th ) -> ps ) ) $= tauto;
+pub theorem _3jaob (ph ps ch th: wff): $ ( ( ( ph \/ ch \/ th ) -> ps ) <-> ( ( ph -> ps ) /\ ( ch -> ps ) /\ ( th -> ps ) ) ) $= tauto;
+pub theorem an6 (ph ps ch th ta et: wff): $ ( ( ( ph /\ ps /\ ch ) /\ ( th /\ ta /\ et ) ) <-> ( ( ph /\ th ) /\ ( ps /\ ta ) /\ ( ch /\ et ) ) ) $= tauto;
+pub theorem _3an6 (ph ps ch th ta et: wff): $ ( ( ( ph /\ ps ) /\ ( ch /\ th ) /\ ( ta /\ et ) ) <-> ( ( ph /\ ch /\ ta ) /\ ( ps /\ th /\ et ) ) ) $= tauto;
+pub theorem _3or6 (ph ps ch th ta et: wff): $ ( ( ( ph \/ ps ) \/ ( ch \/ th ) \/ ( ta \/ et ) ) <-> ( ( ph \/ ch \/ ta ) \/ ( ps \/ th \/ et ) ) ) $= tauto;
+pub theorem an3andi (ph ps ch th: wff): $ ( ( ph /\ ( ps /\ ch /\ th ) ) <-> ( ( ph /\ ps ) /\ ( ph /\ ch ) /\ ( ph /\ th ) ) ) $= tauto;
+pub theorem an33rean (ph ps ch th ta et ze si rh: wff): $ ( ( ( ph /\ ps /\ ch ) /\ ( th /\ ta /\ et ) /\ ( ze /\ si /\ rh ) ) <-> ( ( ph /\ ta /\ rh ) /\ ( ( ps /\ th ) /\ ( et /\ si ) /\ ( ch /\ ze ) ) ) ) $= tauto;
+pub theorem _3orel2 (ph ps ch: wff): $ ( ~ ps -> ( ( ph \/ ps \/ ch ) -> ( ph \/ ch ) ) ) $= tauto;
+pub theorem _3orel3 (ph ps ch: wff): $ ( ~ ch -> ( ( ph \/ ps \/ ch ) -> ( ph \/ ps ) ) ) $= tauto;
+pub theorem _3orel13 (ph ps ch: wff): $ ( ( ~ ph /\ ~ ch ) -> ( ( ph \/ ps \/ ch ) -> ps ) ) $= tauto;
+
+pub theorem df_nan (ph ps: wff): $ ( ( ph -/\ ps ) <-> ~ ( ph /\ ps ) ) $= tauto;
+pub theorem nanan (ph ps: wff): $ ( ( ph /\ ps ) <-> ~ ( ph -/\ ps ) ) $= tauto;
+pub theorem dfnan2 (ph ps: wff): $ ( ( ph -/\ ps ) <-> ( ph -> ~ ps ) ) $= tauto;
+pub theorem nanor (ph ps: wff): $ ( ( ph -/\ ps ) <-> ( ~ ph \/ ~ ps ) ) $= tauto;
+pub theorem nancom (ph ps: wff): $ ( ( ph -/\ ps ) <-> ( ps -/\ ph ) ) $= tauto;
+pub theorem nannan (ph ps ch: wff): $ ( ( ph -/\ ( ps -/\ ch ) ) <-> ( ph -> ( ps /\ ch ) ) ) $= tauto;
+pub theorem nanim (ph ps: wff): $ ( ( ph -> ps ) <-> ( ph -/\ ( ps -/\ ps ) ) ) $= tauto;
+pub theorem nannot (ph: wff): $ ( ~ ph <-> ( ph -/\ ph ) ) $= tauto;
+pub theorem nanbi (ph ps: wff): $ ( ( ph <-> ps ) <-> ( ( ph -/\ ps ) -/\ ( ( ph -/\ ph ) -/\ ( ps -/\ ps ) ) ) ) $= tauto;
+pub theorem nanbi1 (ph ps ch: wff): $ ( ( ph <-> ps ) -> ( ( ph -/\ ch ) <-> ( ps -/\ ch ) ) ) $= tauto;
+pub theorem nanbi2 (ph ps ch: wff): $ ( ( ph <-> ps ) -> ( ( ch -/\ ph ) <-> ( ch -/\ ps ) ) ) $= tauto;
+pub theorem nanbi12 (ph ps ch th: wff): $ ( ( ( ph <-> ps ) /\ ( ch <-> th ) ) -> ( ( ph -/\ ch ) <-> ( ps -/\ th ) ) ) $= tauto;
+pub theorem nanass (ph ps ch: wff): $ ( ( ph <-> ch ) <-> ( ( ( ph -/\ ps ) -/\ ch ) <-> ( ph -/\ ( ps -/\ ch ) ) ) ) $= tauto;
+
+pub theorem df_xor (ph ps: wff): $ ( ( ph \/_ ps ) <-> ~ ( ph <-> ps ) ) $= tauto;
+pub theorem xnor (ph ps: wff): $ ( ( ph <-> ps ) <-> ~ ( ph \/_ ps ) ) $= tauto;
+pub theorem xorcom (ph ps: wff): $ ( ( ph \/_ ps ) <-> ( ps \/_ ph ) ) $= tauto;
+pub theorem xorass (ph ps ch: wff): $ ( ( ( ph \/_ ps ) \/_ ch ) <-> ( ph \/_ ( ps \/_ ch ) ) ) $= tauto;
+pub theorem excxor (ph ps: wff): $ ( ( ph \/_ ps ) <-> ( ( ph /\ ~ ps ) \/ ( ~ ph /\ ps ) ) ) $= tauto;
+pub theorem xor2 (ph ps: wff): $ ( ( ph \/_ ps ) <-> ( ( ph \/ ps ) /\ ~ ( ph /\ ps ) ) ) $= tauto;
+pub theorem xoror (ph ps: wff): $ ( ( ph \/_ ps ) -> ( ph \/ ps ) ) $= tauto;
+pub theorem xornan (ph ps: wff): $ ( ( ph \/_ ps ) -> ~ ( ph /\ ps ) ) $= tauto;
+pub theorem xornan2 (ph ps: wff): $ ( ( ph \/_ ps ) -> ( ph -/\ ps ) ) $= tauto;
+pub theorem xorneg2 (ph ps: wff): $ ( ( ph \/_ ~ ps ) <-> ~ ( ph \/_ ps ) ) $= tauto;
+pub theorem xorneg1 (ph ps: wff): $ ( ( ~ ph \/_ ps ) <-> ~ ( ph \/_ ps ) ) $= tauto;
+pub theorem xorneg (ph ps: wff): $ ( ( ~ ph \/_ ~ ps ) <-> ( ph \/_ ps ) ) $= tauto;
+pub theorem anxordi (ph ps ch: wff): $ ( ( ph /\ ( ps \/_ ch ) ) <-> ( ( ph /\ ps ) \/_ ( ph /\ ch ) ) ) $= tauto;
+pub theorem xorexmid (ph: wff): $ ( ph \/_ ~ ph ) $= tauto;
+
+pub theorem df_nor (ph ps: wff): $ ( ( ph -\/ ps ) <-> ~ ( ph \/ ps ) ) $= tauto;
+pub theorem norcom (ph ps: wff): $ ( ( ph -\/ ps ) <-> ( ps -\/ ph ) ) $= tauto;
+pub theorem nornot (ph: wff): $ ( ~ ph <-> ( ph -\/ ph ) ) $= tauto;
+pub theorem noran (ph ps: wff): $ ( ( ph /\ ps ) <-> ( ( ph -\/ ph ) -\/ ( ps -\/ ps ) ) ) $= tauto;
+pub theorem noror (ph ps: wff): $ ( ( ph \/ ps ) <-> ( ( ph -\/ ps ) -\/ ( ph -\/ ps ) ) ) $= tauto;
+pub theorem norasslem1 (ph ps ch: wff): $ ( ( ( ph \/ ps ) -> ch ) <-> ( ( ph -\/ ps ) \/ ch ) ) $= tauto;
+pub theorem norasslem2 (ph ps ch: wff): $ ( ph -> ( ps <-> ( ( ph \/ ch ) -> ps ) ) ) $= tauto;
+pub theorem norasslem3 (ph ps ch: wff): $ ( ~ ph -> ( ( ps -> ch ) <-> ( ( ph \/ ps ) -> ch ) ) ) $= tauto;
+pub theorem norass (ph ps ch: wff): $ ( ( ph <-> ch ) <-> ( ( ( ph -\/ ps ) -\/ ch ) <-> ( ph -\/ ( ps -\/ ch ) ) ) ) $= tauto;
+
+pub theorem trujust {x y: set}: $ ( ( A. x x =s x -> A. x x =s x ) <-> ( A. y y =s y -> A. y y =s y ) ) $= tauto;
+pub theorem df_tru {x: set}: $ ( T. <-> ( A. x x =s x -> A. x x =s x ) ) $= tauto;
+pub theorem _tru: $ T. $= tauto;
+pub theorem dftru2 (ph: wff): $ ( T. <-> ( ph -> ph ) ) $= tauto;
+pub theorem trut (ph: wff): $ ( ph <-> ( T. -> ph ) ) $= tauto;
+pub theorem tbtru (ph: wff): $ ( ph <-> ( ph <-> T. ) ) $= tauto;
+pub theorem trud (ph: wff): $ ( ph -> T. ) $= tauto;
+pub theorem truan (ph: wff): $ ( ( T. /\ ph ) <-> ph ) $= tauto;
+
+pub theorem df_fal: $ ( F. <-> ~ T. ) $= tauto;
+pub theorem _fal: $ ~ F. $= tauto;
+pub theorem nbfal (ph: wff): $ ( ~ ph <-> ( ph <-> F. ) ) $= tauto;
+pub theorem falim (ph: wff): $ ( F. -> ph ) $= tauto;
+pub theorem falimd (ph ps: wff): $ ( ( ph /\ F. ) -> ps ) $= tauto;
+pub theorem dfnot (ph: wff): $ ( ~ ph <-> ( ph -> F. ) ) $= tauto;
+pub theorem truimtru: $ ( ( T. -> T. ) <-> T. ) $= tauto;
+pub theorem truimfal: $ ( ( T. -> F. ) <-> F. ) $= tauto;
+pub theorem falimtru: $ ( ( F. -> T. ) <-> T. ) $= tauto;
+pub theorem falimfal: $ ( ( F. -> F. ) <-> T. ) $= tauto;
+pub theorem nottru: $ ( ~ T. <-> F. ) $= tauto;
+pub theorem notfal: $ ( ~ F. <-> T. ) $= tauto;
+pub theorem trubitru: $ ( ( T. <-> T. ) <-> T. ) $= tauto;
+pub theorem falbitru: $ ( ( F. <-> T. ) <-> F. ) $= tauto;
+pub theorem trubifal: $ ( ( T. <-> F. ) <-> F. ) $= tauto;
+pub theorem falbifal: $ ( ( F. <-> F. ) <-> T. ) $= tauto;
+pub theorem truantru: $ ( ( T. /\ T. ) <-> T. ) $= tauto;
+pub theorem truanfal: $ ( ( T. /\ F. ) <-> F. ) $= tauto;
+pub theorem falantru: $ ( ( F. /\ T. ) <-> F. ) $= tauto;
+pub theorem falanfal: $ ( ( F. /\ F. ) <-> F. ) $= tauto;
+pub theorem truortru: $ ( ( T. \/ T. ) <-> T. ) $= tauto;
+pub theorem truorfal: $ ( ( T. \/ F. ) <-> T. ) $= tauto;
+pub theorem falortru: $ ( ( F. \/ T. ) <-> T. ) $= tauto;
+pub theorem falorfal: $ ( ( F. \/ F. ) <-> F. ) $= tauto;
+pub theorem trunantru: $ ( ( T. -/\ T. ) <-> F. ) $= tauto;
+pub theorem trunanfal: $ ( ( T. -/\ F. ) <-> T. ) $= tauto;
+pub theorem falnantru: $ ( ( F. -/\ T. ) <-> T. ) $= tauto;
+pub theorem falnanfal: $ ( ( F. -/\ F. ) <-> T. ) $= tauto;
+pub theorem truxortru: $ ( ( T. \/_ T. ) <-> F. ) $= tauto;
+pub theorem truxorfal: $ ( ( T. \/_ F. ) <-> T. ) $= tauto;
+pub theorem falxortru: $ ( ( F. \/_ T. ) <-> T. ) $= tauto;
+pub theorem falxorfal: $ ( ( F. \/_ F. ) <-> F. ) $= tauto;
+pub theorem trunortru: $ ( ( T. -\/ T. ) <-> F. ) $= tauto;
+pub theorem trunorfal: $ ( ( T. -\/ F. ) <-> F. ) $= tauto;
+pub theorem falnortru: $ ( ( F. -\/ T. ) <-> F. ) $= tauto;
+pub theorem falnorfal: $ ( ( F. -\/ F. ) <-> T. ) $= tauto;
+
+pub theorem df_had (ph ps ch: wff): $ ( had ph ps ch <-> ( ( ph \/_ ps ) \/_ ch ) ) $= tauto;
+pub theorem hadass (ph ps ch: wff): $ ( had ph ps ch <-> ( ph \/_ ( ps \/_ ch ) ) ) $= tauto;
+pub theorem hadbi (ph ps ch: wff): $ ( had ph ps ch <-> ( ( ph <-> ps ) <-> ch ) ) $= tauto;
+pub theorem hadcoma (ph ps ch: wff): $ ( had ph ps ch <-> had ps ph ch ) $= tauto;
+pub theorem hadcomb (ph ps ch: wff): $ ( had ph ps ch <-> had ph ch ps ) $= tauto;
+pub theorem hadrot (ph ps ch: wff): $ ( had ph ps ch <-> had ps ch ph ) $= tauto;
+pub theorem hadnot (ph ps ch: wff): $ ( ~ had ph ps ch <-> had (~ph) (~ps) (~ch) ) $= tauto;
+pub theorem had1 (ph ps ch: wff): $ ( ph -> ( had ph ps ch <-> ( ps <-> ch ) ) ) $= tauto;
+pub theorem had0 (ph ps ch: wff): $ ( ~ ph -> ( had ph ps ch <-> ( ps \/_ ch ) ) ) $= tauto;
+pub theorem hadifp (ph ps ch: wff): $ ( had ph ps ch <-> ifp ph ( ps <-> ch ) ( ps \/_ ch ) ) $= tauto;
+
+pub theorem df_cad (ph ps ch: wff): $ ( cad ph ps ch <-> ( ( ph /\ ps ) \/ ( ch /\ ( ph \/_ ps ) ) ) ) $= tauto;
+pub theorem cador (ph ps ch: wff): $ ( cad ph ps ch <-> ( ( ph /\ ps ) \/ ( ph /\ ch ) \/ ( ps /\ ch ) ) ) $= tauto;
+pub theorem cadan (ph ps ch: wff): $ ( cad ph ps ch <-> ( ( ph \/ ps ) /\ ( ph \/ ch ) /\ ( ps \/ ch ) ) ) $= tauto;
+pub theorem cadcoma (ph ps ch: wff): $ ( cad ph ps ch <-> cad ps ph ch ) $= tauto;
+pub theorem cadcomb (ph ps ch: wff): $ ( cad ph ps ch <-> cad ph ch ps ) $= tauto;
+pub theorem cadrot (ph ps ch: wff): $ ( cad ph ps ch <-> cad ps ch ph ) $= tauto;
+pub theorem cadnot (ph ps ch: wff): $ ( ~ cad ph ps ch <-> cad (~ph) (~ps) (~ch) ) $= tauto;
+pub theorem cad11 (ph ps ch: wff): $ ( ( ph /\ ps ) -> cad ph ps ch ) $= tauto;
+pub theorem cad1 (ph ps ch: wff): $ ( ch -> ( cad ph ps ch <-> ( ph \/ ps ) ) ) $= tauto;
+pub theorem cad0 (ph ps ch: wff): $ ( ~ ch -> ( cad ph ps ch <-> ( ph /\ ps ) ) ) $= tauto;
+pub theorem cadifp (ph ps ch: wff): $ ( cad ph ps ch <-> ifp ch ( ph \/ ps ) ( ph /\ ps ) ) $= tauto;
+pub theorem cadtru (ph: wff): $ cad T. T. ph $= tauto;
+
+pub theorem minimp (ph ps ch th ta: wff): $ ( ph -> ( ( ps -> ch ) -> ( ( ( th -> ps ) -> ( ch -> ta ) ) -> ( ps -> ta ) ) ) ) $= tauto;
+pub theorem minimp_syllsimp (ph ps ch: wff): $ ( ( ( ph -> ps ) -> ch ) -> ( ps -> ch ) ) $= tauto;
+pub theorem minimp_ax1 (ph ps: wff): $ ( ph -> ( ps -> ph ) ) $= tauto;
+pub theorem minimp_ax2c (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ph -> ( ps -> ch ) ) -> ( ph -> ch ) ) ) $= tauto;
+pub theorem minimp_ax2 (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) -> ( ( ph -> ps ) -> ( ph -> ch ) ) ) $= tauto;
+pub theorem minimp_pm2_43 (ph ps: wff): $ ( ( ph -> ( ph -> ps ) ) -> ( ph -> ps ) ) $= tauto;
+
+pub theorem impsingle (ph ps ch th: wff): $ ( ( ( ph -> ps ) -> ch ) -> ( ( ch -> ph ) -> ( th -> ph ) ) ) $= tauto;
+pub theorem impsingle_step4 (ph ps ch: wff): $ ( ( ( ph -> ps ) -> ph ) -> ( ch -> ph ) ) $= tauto;
+pub theorem impsingle_step8 (ph ps ch: wff): $ ( ( ( ph -> ps ) -> ch ) -> ( ps -> ch ) ) $= tauto;
+pub theorem impsingle_ax1 (ph ps: wff): $ ( ph -> ( ps -> ph ) ) $= tauto;
+pub theorem impsingle_step15 (ph ps ch th: wff): $ ( ( ( ph -> ps ) -> ( ch -> th ) ) -> ( ( ph -> th ) -> ( ch -> th ) ) ) $= tauto;
+pub theorem impsingle_step18 (ph ps ch th ta et: wff): $ ( ( ( ( ph -> ps ) -> ( ch -> ps ) ) -> ( ( ( ps -> th ) -> ph ) -> ta ) ) -> ( et -> ( ( ( ps -> th ) -> ph ) -> ta ) ) ) $= tauto;
+pub theorem impsingle_step19 (ph ps ch th: wff): $ ( ( ( ( ph -> ps ) -> ch ) -> ( th -> ps ) ) -> ( ( ( ps -> ch ) -> th ) -> ( ph -> ps ) ) ) $= tauto;
+pub theorem impsingle_step20 (ph ps ch th: wff): $ ( ( ( ( ph -> ps ) -> ps ) -> ( ch -> ps ) ) -> ( ( ( ps -> th ) -> ph ) -> ( ch -> ps ) ) ) $= tauto;
+pub theorem impsingle_step21 (ph ps ch: wff): $ ( ( ( ( ph -> ps ) -> ch ) -> ch ) -> ( ( ch -> ps ) -> ( ph -> ps ) ) ) $= tauto;
+pub theorem impsingle_step22 (ph: wff): $ ( ph -> ph ) $= tauto;
+pub theorem impsingle_step25 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ( ph -> ch ) -> ps ) -> ps ) ) $= tauto;
+pub theorem impsingle_imim1 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ps -> ch ) -> ( ph -> ch ) ) ) $= tauto;
+pub theorem impsingle_peirce (ph ps: wff): $ ( ( ( ph -> ps ) -> ph ) -> ph ) $= tauto;
+pub theorem tarski_bernays_ax2 (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) -> ( ( ph -> ps ) -> ( ph -> ch ) ) ) $= tauto;
+
+pub theorem meredith (ph ps ch th ta: wff): $ ( ( ( ( ( ph -> ps ) -> ( ~ ch -> ~ th ) ) -> ch ) -> ta ) -> ( ( ta -> ph ) -> ( th -> ph ) ) ) $= tauto;
+pub theorem merlem1 (ph ps ch ta: wff): $ ( ( ( ch -> ( ~ ph -> ps ) ) -> ta ) -> ( ph -> ta ) ) $= tauto;
+pub theorem merlem2 (ph ch th: wff): $ ( ( ( ph -> ph ) -> ch ) -> ( th -> ch ) ) $= tauto;
+pub theorem merlem3 (ph ps ch: wff): $ ( ( ( ps -> ch ) -> ph ) -> ( ch -> ph ) ) $= tauto;
+pub theorem merlem4 (ph th ta: wff): $ ( ta -> ( ( ta -> ph ) -> ( th -> ph ) ) ) $= tauto;
+pub theorem merlem5 (ph ps: wff): $ ( ( ph -> ps ) -> ( ~ ~ ph -> ps ) ) $= tauto;
+pub theorem merlem6 (ph ps ch th: wff): $ ( ch -> ( ( ( ps -> ch ) -> ph ) -> ( th -> ph ) ) ) $= tauto;
+pub theorem merlem7 (ph ps ch th ta: wff): $ ( ph -> ( ( ( ps -> ch ) -> th ) -> ( ( ( ch -> ta ) -> ( ~ th -> ~ ps ) ) -> th ) ) ) $= tauto;
+pub theorem merlem8 (ps ch th ta: wff): $ ( ( ( ps -> ch ) -> th ) -> ( ( ( ch -> ta ) -> ( ~ th -> ~ ps ) ) -> th ) ) $= tauto;
+pub theorem merlem9 (ph ps ch th ta et: wff): $ ( ( ( ph -> ps ) -> ( ch -> ( th -> ( ps -> ta ) ) ) ) -> ( et -> ( ch -> ( th -> ( ps -> ta ) ) ) ) ) $= tauto;
+pub theorem merlem10 (ph ps th: wff): $ ( ( ph -> ( ph -> ps ) ) -> ( th -> ( ph -> ps ) ) ) $= tauto;
+pub theorem merlem11 (ph ps: wff): $ ( ( ph -> ( ph -> ps ) ) -> ( ph -> ps ) ) $= tauto;
+pub theorem merlem12 (ph ch th: wff): $ ( ( ( th -> ( ~ ~ ch -> ch ) ) -> ph ) -> ph ) $= tauto;
+pub theorem merlem13 (ph ps ch th: wff): $ ( ( ph -> ps ) -> ( ( ( th -> ( ~ ~ ch -> ch ) ) -> ~ ~ ph ) -> ps ) ) $= tauto;
+pub theorem luk_1 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ps -> ch ) -> ( ph -> ch ) ) ) $= tauto;
+pub theorem luk_2 (ph: wff): $ ( ( ~ ph -> ph ) -> ph ) $= tauto;
+pub theorem luk_3 (ph ps: wff): $ ( ph -> ( ~ ph -> ps ) ) $= tauto;
+pub theorem luklem2 (ph ps ch th: wff): $ ( ( ph -> ~ ps ) -> ( ( ( ph -> ch ) -> th ) -> ( ps -> th ) ) ) $= tauto;
+pub theorem luklem3 (ph ps ch th: wff): $ ( ph -> ( ( ( ~ ph -> ps ) -> ch ) -> ( th -> ch ) ) ) $= tauto;
+pub theorem luklem4 (ph ps: wff): $ ( ( ( ( ~ ph -> ph ) -> ph ) -> ps ) -> ps ) $= tauto;
+pub theorem luklem5 (ph ps: wff): $ ( ph -> ( ps -> ph ) ) $= tauto;
+pub theorem luklem6 (ph ps: wff): $ ( ( ph -> ( ph -> ps ) ) -> ( ph -> ps ) ) $= tauto;
+pub theorem luklem7 (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) -> ( ps -> ( ph -> ch ) ) ) $= tauto;
+pub theorem luklem8 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ch -> ph ) -> ( ch -> ps ) ) ) $= tauto;
+pub theorem ax1 (ph ps: wff): $ ( ph -> ( ps -> ph ) ) $= tauto;
+pub theorem ax2 (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) -> ( ( ph -> ps ) -> ( ph -> ch ) ) ) $= tauto;
+pub theorem ax3 (ph ps: wff): $ ( ( ~ ph -> ~ ps ) -> ( ps -> ph ) ) $= tauto;
+
+pub theorem nic_dfim (ph ps: wff): $ ( ( ( ph -/\ ( ps -/\ ps ) ) -/\ ( ph -> ps ) ) -/\ ( ( ( ph -/\ ( ps -/\ ps ) ) -/\ ( ph -/\ ( ps -/\ ps ) ) ) -/\ ( ( ph -> ps ) -/\ ( ph -> ps ) ) ) ) $= tauto;
+pub theorem nic_dfneg (ph: wff): $ ( ( ( ph -/\ ph ) -/\ ~ ph ) -/\ ( ( ( ph -/\ ph ) -/\ ( ph -/\ ph ) ) -/\ ( ~ ph -/\ ~ ph ) ) ) $= tauto;
+pub theorem nic_ax (ph ps ch th ta: wff): $ ( ( ph -/\ ( ch -/\ ps ) ) -/\ ( ( ta -/\ ( ta -/\ ta ) ) -/\ ( ( th -/\ ch ) -/\ ( ( ph -/\ th ) -/\ ( ph -/\ th ) ) ) ) ) $= tauto;
+pub theorem nic_idlem1 (ph ps ch th ta: wff): $ ( ( th -/\ ( ta -/\ ( ta -/\ ta ) ) ) -/\ ( ( ( ph -/\ ( ch -/\ ps ) ) -/\ th ) -/\ ( ( ph -/\ ( ch -/\ ps ) ) -/\ th ) ) ) $= tauto;
+pub theorem nic_id (ta: wff): $ ( ta -/\ ( ta -/\ ta ) ) $= tauto;
+pub theorem nic_swap (ph th: wff): $ ( ( th -/\ ph ) -/\ ( ( ph -/\ th ) -/\ ( ph -/\ th ) ) ) $= tauto;
+pub theorem nic_bijust (ta: wff): $ ( ( ta -/\ ta ) -/\ ( ( ta -/\ ta ) -/\ ( ta -/\ ta ) ) ) $= tauto;
+pub theorem nic_luk1 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ps -> ch ) -> ( ph -> ch ) ) ) $= tauto;
+pub theorem nic_luk2 (ph: wff): $ ( ( ~ ph -> ph ) -> ph ) $= tauto;
+pub theorem nic_luk3 (ph ps: wff): $ ( ph -> ( ~ ph -> ps ) ) $= tauto;
+
+pub theorem lukshef_ax1 (ph ps ch th: wff): $ ( ( ph -/\ ( ch -/\ ps ) ) -/\ ( ( th -/\ ( th -/\ th ) ) -/\ ( ( th -/\ ch ) -/\ ( ( ph -/\ th ) -/\ ( ph -/\ th ) ) ) ) ) $= tauto;
+pub theorem lukshefth1 (ph ps ch th ta: wff): $ ( ( ( ( ta -/\ ps ) -/\ ( ( ph -/\ ta ) -/\ ( ph -/\ ta ) ) ) -/\ ( th -/\ ( th -/\ th ) ) ) -/\ ( ph -/\ ( ps -/\ ch ) ) ) $= tauto;
+pub theorem lukshefth2 (th ta: wff): $ ( ( ta -/\ th ) -/\ ( ( th -/\ ta ) -/\ ( th -/\ ta ) ) ) $= tauto;
+pub theorem renicax (ph ps ch th ta: wff): $ ( ( ph -/\ ( ch -/\ ps ) ) -/\ ( ( ta -/\ ( ta -/\ ta ) ) -/\ ( ( th -/\ ch ) -/\ ( ( ph -/\ th ) -/\ ( ph -/\ th ) ) ) ) ) $= tauto;
+
+pub theorem tbw_bijust (ph ps: wff): $ ( ( ph <-> ps ) <-> ( ( ( ph -> ps ) -> ( ( ps -> ph ) -> F. ) ) -> F. ) ) $= tauto;
+pub theorem tbw_negdf (ph: wff): $ ( ( ( ~ ph -> ( ph -> F. ) ) -> ( ( ( ph -> F. ) -> ~ ph ) -> F. ) ) -> F. ) $= tauto;
+pub theorem tbw_ax1 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ps -> ch ) -> ( ph -> ch ) ) ) $= tauto;
+pub theorem tbw_ax2 (ph ps: wff): $ ( ph -> ( ps -> ph ) ) $= tauto;
+pub theorem tbw_ax3 (ph ps: wff): $ ( ( ( ph -> ps ) -> ph ) -> ph ) $= tauto;
+pub theorem tbw_ax4 (ph: wff): $ ( F. -> ph ) $= tauto;
+pub theorem tbwlem1 (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) -> ( ps -> ( ph -> ch ) ) ) $= tauto;
+pub theorem tbwlem2 (ph ps ch th: wff): $ ( ( ph -> ( ps -> F. ) ) -> ( ( ( ph -> ch ) -> th ) -> ( ps -> th ) ) ) $= tauto;
+pub theorem tbwlem3 (ph ps: wff): $ ( ( ( ( ( ph -> F. ) -> ph ) -> ph ) -> ps ) -> ps ) $= tauto;
+pub theorem tbwlem4 (ph ps: wff): $ ( ( ( ph -> F. ) -> ps ) -> ( ( ps -> F. ) -> ph ) ) $= tauto;
+pub theorem tbwlem5 (ph ps: wff): $ ( ( ( ph -> ( ps -> F. ) ) -> F. ) -> ph ) $= tauto;
+pub theorem re1luk1 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ps -> ch ) -> ( ph -> ch ) ) ) $= tauto;
+pub theorem re1luk2 (ph: wff): $ ( ( ~ ph -> ph ) -> ph ) $= tauto;
+pub theorem re1luk3 (ph ps: wff): $ ( ph -> ( ~ ph -> ps ) ) $= tauto;
+
+pub theorem merco1 (ph ps ch th ta: wff): $ ( ( ( ( ( ph -> ps ) -> ( ch -> F. ) ) -> th ) -> ta ) -> ( ( ta -> ph ) -> ( ch -> ph ) ) ) $= tauto;
+pub theorem merco1lem1 (ph ch: wff): $ ( ph -> ( F. -> ch ) ) $= tauto;
+pub theorem retbwax4 (ph: wff): $ ( F. -> ph ) $= tauto;
+pub theorem retbwax2 (ph ps: wff): $ ( ph -> ( ps -> ph ) ) $= tauto;
+pub theorem merco1lem2 (ph ps ch ta: wff): $ ( ( ( ph -> ps ) -> ch ) -> ( ( ( ps -> ta ) -> ( ph -> F. ) ) -> ch ) ) $= tauto;
+pub theorem merco1lem3 (ph ps ch: wff): $ ( ( ( ph -> ps ) -> ( ch -> F. ) ) -> ( ch -> ph ) ) $= tauto;
+pub theorem merco1lem4 (ph ps ch: wff): $ ( ( ( ph -> ps ) -> ch ) -> ( ps -> ch ) ) $= tauto;
+pub theorem merco1lem5 (ph ch ta: wff): $ ( ( ( ( ph -> F. ) -> ch ) -> ta ) -> ( ph -> ta ) ) $= tauto;
+pub theorem merco1lem6 (ph ps ch: wff): $ ( ( ph -> ( ph -> ps ) ) -> ( ch -> ( ph -> ps ) ) ) $= tauto;
+pub theorem merco1lem7 (ph ps ch: wff): $ ( ph -> ( ( ( ps -> ch ) -> ps ) -> ps ) ) $= tauto;
+pub theorem retbwax3 (ph ps: wff): $ ( ( ( ph -> ps ) -> ph ) -> ph ) $= tauto;
+pub theorem merco1lem8 (ph ps ch: wff): $ ( ph -> ( ( ps -> ( ps -> ch ) ) -> ( ps -> ch ) ) ) $= tauto;
+pub theorem merco1lem9 (ph ps: wff): $ ( ( ph -> ( ph -> ps ) ) -> ( ph -> ps ) ) $= tauto;
+pub theorem merco1lem10 (ph ps ch th ta: wff): $ ( ( ( ( ( ph -> ps ) -> ch ) -> ( ta -> ch ) ) -> ph ) -> ( th -> ph ) ) $= tauto;
+pub theorem merco1lem11 (ph ps ch ta: wff): $ ( ( ph -> ps ) -> ( ( ( ch -> ( ph -> ta ) ) -> F. ) -> ps ) ) $= tauto;
+pub theorem merco1lem12 (ph ps ch ta: wff): $ ( ( ph -> ps ) -> ( ( ( ch -> ( ph -> ta ) ) -> ph ) -> ps ) ) $= tauto;
+pub theorem merco1lem13 (ph ps ch ta: wff): $ ( ( ( ( ph -> ps ) -> ( ch -> ps ) ) -> ta ) -> ( ph -> ta ) ) $= tauto;
+pub theorem merco1lem14 (ph ps ch: wff): $ ( ( ( ( ph -> ps ) -> ps ) -> ch ) -> ( ph -> ch ) ) $= tauto;
+pub theorem merco1lem15 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ph -> ( ch -> ps ) ) ) $= tauto;
+pub theorem merco1lem16 (ph ps ch ta: wff): $ ( ( ( ph -> ( ps -> ch ) ) -> ta ) -> ( ( ph -> ch ) -> ta ) ) $= tauto;
+pub theorem merco1lem17 (ph ps ch ta: wff): $ ( ( ( ( ( ph -> ps ) -> ph ) -> ch ) -> ta ) -> ( ( ph -> ch ) -> ta ) ) $= tauto;
+pub theorem merco1lem18 (ph ps ch: wff): $ ( ( ph -> ( ps -> ch ) ) -> ( ( ps -> ph ) -> ( ps -> ch ) ) ) $= tauto;
+pub theorem retbwax1 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ps -> ch ) -> ( ph -> ch ) ) ) $= tauto;
+
+pub theorem merco2 (ph ps ch th ta et: wff): $ ( ( ( ph -> ps ) -> ( ( F. -> ch ) -> th ) ) -> ( ( th -> ph ) -> ( ta -> ( et -> ph ) ) ) ) $= tauto;
+pub theorem mercolem1 (ph ps ch th: wff): $ ( ( ( ph -> ps ) -> ch ) -> ( ps -> ( th -> ch ) ) ) $= tauto;
+pub theorem mercolem2 (ph ps ch th: wff): $ ( ( ( ph -> ps ) -> ph ) -> ( ch -> ( th -> ph ) ) ) $= tauto;
+pub theorem mercolem3 (ph ps ch: wff): $ ( ( ps -> ch ) -> ( ps -> ( ph -> ch ) ) ) $= tauto;
+pub theorem mercolem4 (ph ch th ta et: wff): $ ( ( th -> ( et -> ph ) ) -> ( ( ( th -> ch ) -> ph ) -> ( ta -> ( et -> ph ) ) ) ) $= tauto;
+pub theorem mercolem5 (ph ch th ta: wff): $ ( th -> ( ( th -> ph ) -> ( ta -> ( ch -> ph ) ) ) ) $= tauto;
+pub theorem mercolem6 (ph ps ch: wff): $ ( ( ph -> ( ps -> ( ph -> ch ) ) ) -> ( ps -> ( ph -> ch ) ) ) $= tauto;
+pub theorem mercolem7 (ph ps ch th: wff): $ ( ( ph -> ps ) -> ( ( ( ph -> ch ) -> ( th -> ps ) ) -> ( th -> ps ) ) ) $= tauto;
+pub theorem mercolem8 (ph ps ch th ta: wff): $ ( ( ph -> ps ) -> ( ( ps -> ( ph -> ch ) ) -> ( ta -> ( th -> ( ph -> ch ) ) ) ) ) $= tauto;
+pub theorem re1tbw1 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ps -> ch ) -> ( ph -> ch ) ) ) $= tauto;
+pub theorem re1tbw2 (ph ps: wff): $ ( ph -> ( ps -> ph ) ) $= tauto;
+pub theorem re1tbw3 (ph ps: wff): $ ( ( ( ph -> ps ) -> ph ) -> ph ) $= tauto;
+pub theorem re1tbw4 (ph: wff): $ ( F. -> ph ) $= tauto;
+
+pub theorem rb_bijust (ph ps: wff): $ ( ( ph <-> ps ) <-> ~ ( ~ ( ~ ph \/ ps ) \/ ~ ( ~ ps \/ ph ) ) ) $= tauto;
+pub theorem rb_imdf (ph ps: wff): $ ~ ( ~ ( ~ ( ph -> ps ) \/ ( ~ ph \/ ps ) ) \/ ~ ( ~ ( ~ ph \/ ps ) \/ ( ph -> ps ) ) ) $= tauto;
+pub theorem rb_ax1 (ph ps ch: wff): $ ( ~ ( ~ ps \/ ch ) \/ ( ~ ( ph \/ ps ) \/ ( ph \/ ch ) ) ) $= tauto;
+pub theorem rb_ax2 (ph ps: wff): $ ( ~ ( ph \/ ps ) \/ ( ps \/ ph ) ) $= tauto;
+pub theorem rb_ax3 (ph ps: wff): $ ( ~ ph \/ ( ps \/ ph ) ) $= tauto;
+pub theorem rb_ax4 (ph: wff): $ ( ~ ( ph \/ ph ) \/ ph ) $= tauto;
+pub theorem rblem2 (ph ps ch: wff): $ ( ~ ( ch \/ ph ) \/ ( ch \/ ( ph \/ ps ) ) ) $= tauto;
+pub theorem rblem3 (ph ps ch: wff): $ ( ~ ( ch \/ ph ) \/ ( ( ch \/ ps ) \/ ph ) ) $= tauto;
+pub theorem rblem5 (ph ps: wff): $ ( ~ ( ~ ~ ph \/ ps ) \/ ( ~ ~ ps \/ ph ) ) $= tauto;
+pub theorem re2luk1 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ps -> ch ) -> ( ph -> ch ) ) ) $= tauto;
+pub theorem re2luk2 (ph: wff): $ ( ( ~ ph -> ph ) -> ph ) $= tauto;
+pub theorem re2luk3 (ph ps: wff): $ ( ph -> ( ~ ph -> ps ) ) $= tauto;
+
+-- Tactic to view the generated proofs (copied from peano.mm1)
+do {
+  (def (get-proof x) (nth 1 @ @ nth 6 @ get-decl x))
+  (display @ pp @ get-proof 'mercolem1)
+};
