@@ -1032,5 +1032,5 @@ pub theorem re2luk3 (ph ps: wff): $ ( ph -> ( ~ ph -> ps ) ) $= tauto;
 -- Tactic to view the generated proofs (copied from peano.mm1)
 do {
   (def (get-proof x) (nth 1 @ @ nth 6 @ get-decl x))
-  (display @ pp @ get-proof 'mercolem1)
+  (display @ pp @ get-proof 'pm2_48)
 };
