@@ -83,40 +83,37 @@ term eq (a b: set): wff; infixl eq: $=s$ prec 50;
 
 --- Theorems for tauto ---
 
-theorem tauto_start (h: $ T. -> ~t -> ~T. $): $ t $ = '(ax_mp ax_tru @ ax_mp (ax_mp ax_tru h) ax_3);
-theorem tauto_unfold (h1: $ G -> a -> ~(R /\ b) $) (h2: $ c -> b $): $ G -> a -> ~(R /\ c) $ =
-'(syld (a1i @ ax_mp (ax_mp (ax_mp (ax_mp h2 con3) imim2) con3) con3) h1);
-theorem tauto_nn (h: $ G -> a -> ~R $): $ G -> ~~a -> ~R $ = '(syld h @ a1i notnotr);
-theorem tauto_tru (h: $ G -> ~R $): $ G -> T. -> ~R $ = '(a1d h);
-theorem tauto_ntru: $ G -> ~T. -> ~R $ = '(syl con3 @ a1i @ a1i ax_tru);
-theorem tauto_fal: $ G -> F. -> ~R $ = 'tauto_ntru;
-theorem tauto_nfal (h: $ G -> ~R $): $ G -> ~F. -> ~R $ = '(tauto_nn @ tauto_tru h);
-theorem tauto_im (h1: $ G -> ~a -> ~R $) (h2: $ G -> b -> ~R $): $ G -> (a -> b) -> ~R $ = '(jad h1 h2);
-theorem tauto_nim (h: $ G -> a -> ~(R /\ ~b) $): $ G -> ~(a -> b) -> ~R $ =
-'(syl (syl con3 @ com23 @ ax_mp (syl (ax_mp notnotr imim2) notnotr) imim2) h);
-theorem tauto_or (h1: $ G -> a -> ~R $) (h2: $ G -> b -> ~R $): $ G -> a \/ b -> ~R $ = '(tauto_im (tauto_nn h1) h2);
-theorem tauto_an (h: $ G -> a -> ~(R /\ b) $): $ G -> a /\ b -> ~R $ = '(tauto_nim @ tauto_unfold h notnotr);
-theorem tauto_nor (h: $ G -> ~a -> ~(R /\ ~b) $): $ G -> ~(a \/ b) -> ~R $ = '(tauto_nim h);
-theorem tauto_nan (h1: $ G -> ~a -> ~R $) (h2: $ G -> ~b -> ~R $): $ G -> ~(a /\ b) -> ~R $ = '(tauto_nn @ tauto_im h1 h2);
-theorem tauto_iff (h: $ G -> (a -> b) /\ (b -> a) -> ~R $): $ G -> (a <-> b) -> ~R $ = 'h;
-theorem tauto_niff (h: $ G -> ~((a -> b) /\ (b -> a)) -> ~R $): $ G -> ~(a <-> b) -> ~R $ = 'h;
-theorem tauto__nan (h: $ G -> ~(a /\ b) -> ~R $): $ G -> a -/\ b -> ~R $ = 'h;
-theorem tauto_nnan (h: $ G -> a /\ b -> ~R $): $ G -> ~(a -/\ b) -> ~R $ = '(tauto_nn h);
-theorem tauto__nor (h: $ G -> ~(a \/ b) -> ~R $): $ G -> a -\/ b -> ~R $ = 'h;
-theorem tauto_nnor (h: $ G -> a \/ b -> ~R $): $ G -> ~(a -\/ b) -> ~R $ = '(tauto_nn h);
-theorem tauto_xor (h: $ G -> ~(a <-> b) -> ~R $): $ G -> (a \/_ b) -> ~R $ = 'h;
-theorem tauto_nxor (h: $ G -> (a <-> b) -> ~R $): $ G -> ~(a \/_ b) -> ~R $ = '(tauto_nn h);
-theorem tauto_ifp (h: $ G -> ((a /\ b) \/ (~a /\ c)) -> ~R $): $ G -> ifp a b c -> ~R $ = 'h;
-theorem tauto_nifp (h: $ G -> ~((a /\ b) \/ (~a /\ c)) -> ~R $): $ G -> ~ifp a b c -> ~R $ = 'h;
-theorem tauto_had (h: $ G -> (a \/_ b \/_ c) -> ~R $): $ G -> had a b c -> ~R $ = 'h;
-theorem tauto_nhad (h: $ G -> ~(a \/_ b \/_ c) -> ~R $): $ G -> ~had a b c -> ~R $ = 'h;
-theorem tauto_cad (h: $ G -> (a /\ b \/ a /\ c \/ b /\ c) -> ~R $): $ G -> cad a b c -> ~R $ = 'h;
-theorem tauto_ncad (h: $ G -> ~(a /\ b \/ a /\ c \/ b /\ c) -> ~R $): $ G -> ~cad a b c -> ~R $ = 'h;
-theorem tauto_pop (h: $ G -> a -> ~R $): $ G -> ~(R /\ a) $ = '(syl notnot @ syl con2 h);
-theorem tauto_push (h: $ G /\ a -> ~R $): $ G -> a -> ~R $ = '(expi h);
+theorem tauto_start (h: $ T. -> ~t -> F. $): $ t $ = '(ax_mp ax_tru @ ax_mp (ax_mp ax_tru h) ax_3);
+theorem tauto_unfold (h1: $ G -> a -> b -> R $) (h2: $ c -> b $): $ G -> a -> c -> R $ = '(syld (a1i @ com12 @ syl mpcom h2) h1);
+theorem tauto_nn (h: $ G -> a -> R $): $ G -> ~~a -> R $ = '(syld h @ a1i notnotr);
+theorem tauto_tru (h: $ G -> R $): $ G -> T. -> R $ = '(a1d h);
+theorem tauto_ntru: $ G -> ~T. -> R $ = '(syl con1 @ a1i @ a1i ax_tru);
+theorem tauto_fal: $ G -> F. -> R $ = 'tauto_ntru;
+theorem tauto_nfal (h: $ G -> R $): $ G -> ~F. -> R $ = '(tauto_nn @ tauto_tru h);
+theorem tauto_im (h1: $ G -> ~a -> R $) (h2: $ G -> b -> R $): $ G -> (a -> b) -> R $ = '(jad h1 h2);
+theorem tauto_nim (h: $ G -> a -> ~b -> R $): $ G -> ~(a -> b) -> R $ = '(impnegd h);
+theorem tauto_or (h1: $ G -> a -> R $) (h2: $ G -> b -> R $): $ G -> a \/ b -> R $ = '(tauto_im (tauto_nn h1) h2);
+theorem tauto_an (h: $ G -> a -> b -> R $): $ G -> a /\ b -> R $ = '(tauto_nim @ tauto_unfold h notnotr);
+theorem tauto_nor (h: $ G -> ~a -> ~b -> R $): $ G -> ~(a \/ b) -> R $ = '(tauto_nim h);
+theorem tauto_nan (h1: $ G -> ~a -> R $) (h2: $ G -> ~b -> R $): $ G -> ~(a /\ b) -> R $ = '(tauto_nn @ tauto_im h1 h2);
+theorem tauto_iff (h: $ G -> (a -> b) /\ (b -> a) -> R $): $ G -> (a <-> b) -> R $ = 'h;
+theorem tauto_niff (h: $ G -> ~((a -> b) /\ (b -> a)) -> R $): $ G -> ~(a <-> b) -> R $ = 'h;
+theorem tauto__nan (h: $ G -> ~(a /\ b) -> R $): $ G -> a -/\ b -> R $ = 'h;
+theorem tauto_nnan (h: $ G -> a /\ b -> R $): $ G -> ~(a -/\ b) -> R $ = '(tauto_nn h);
+theorem tauto__nor (h: $ G -> ~(a \/ b) -> R $): $ G -> a -\/ b -> R $ = 'h;
+theorem tauto_nnor (h: $ G -> a \/ b -> R $): $ G -> ~(a -\/ b) -> R $ = '(tauto_nn h);
+theorem tauto_xor (h: $ G -> ~(a <-> b) -> R $): $ G -> (a \/_ b) -> R $ = 'h;
+theorem tauto_nxor (h: $ G -> (a <-> b) -> R $): $ G -> ~(a \/_ b) -> R $ = '(tauto_nn h);
+theorem tauto_ifp (h: $ G -> ((a /\ b) \/ (~a /\ c)) -> R $): $ G -> ifp a b c -> R $ = 'h;
+theorem tauto_nifp (h: $ G -> ~((a /\ b) \/ (~a /\ c)) -> R $): $ G -> ~ifp a b c -> R $ = 'h;
+theorem tauto_had (h: $ G -> (a \/_ b \/_ c) -> R $): $ G -> had a b c -> R $ = 'h;
+theorem tauto_nhad (h: $ G -> ~(a \/_ b \/_ c) -> R $): $ G -> ~had a b c -> R $ = 'h;
+theorem tauto_cad (h: $ G -> (a /\ b \/ a /\ c \/ b /\ c) -> R $): $ G -> cad a b c -> R $ = 'h;
+theorem tauto_ncad (h: $ G -> ~(a /\ b \/ a /\ c \/ b /\ c) -> R $): $ G -> ~cad a b c -> R $ = 'h;
+theorem tauto_push (h: $ G /\ a -> R $): $ G -> a -> R $ = '(expi h);
 theorem tauto_anr: $ G /\ a -> a $ = '(impneg @ a1i notnotr);
 theorem tauto_anwl (h: $ G -> b $): $ G /\ a -> b $ = '(impneg @ a1d h);
-theorem tauto_done (h1: $ G -> ~a $) (h2: $ G -> a $): $ G -> ~T. $ = '(mpd h2 @ syl con2 @ a1d h1);
+theorem tauto_done (h1: $ G -> ~a $) (h2: $ G -> a $): $ G -> F. $ = '(mpd h2 @ syl con2 @ a1d h1);
 
 --- Tactics for tauto ---
 
@@ -128,7 +125,7 @@ do {
       [#undef (first G @ fn (b p) (f b '(tauto_anwl ,G ,a ,b ,p)))]
       [x x]])
 
-  --| Proves `G -> ~T.`
+  --| Proves `G -> F.`
   (def (prove1 G)
     @ match
       (first G @ fn (a p) @ match a
@@ -137,12 +134,12 @@ do {
     [#undef (error "failed")]
     [x x])
 
-  --| Proves `G -> ~R`
+  --| Proves `G -> R`
   (def (prove0 G R) @ match R
-    [$ ,R /\ ,a $ '(tauto_pop ,G ,R ,a ,(prove G a R))]
-    [$ T. $ (prove1 G)])
+    [$ ,a -> ,R $ (prove G a R)]
+    [$ F. $ (prove1 G)])
 
-  --| Proves `G -> t -> ~R`
+  --| Proves `G -> t -> R`
   (def (prove G t R) @ match t
     [ $ T. $           '(tauto_tru ,G ,R ,(prove0 G R))]
     [ $ ~T. $          '(tauto_ntru ,G ,R)]
@@ -150,10 +147,10 @@ do {
     [ $ ~F. $          '(tauto_nfal ,G ,R ,(prove0 G R))]
     [ $ ~~,a $         '(tauto_nn ,G ,R ,a ,(prove G a R))]
     [ $ ,a -> ,b $     '(tauto_im ,G ,R ,a ,b ,(prove G $ ~,a $ R) ,(prove G b R))]
-    [ $ ~(,a -> ,b) $  '(tauto_nim ,G ,R ,a ,b ,(prove G a $ ,R /\ ~,b $))]
+    [ $ ~(,a -> ,b) $  '(tauto_nim ,G ,R ,a ,b ,(prove G a $ ~,b -> ,R $))]
     [ $ ,a \/ ,b $     '(tauto_or ,G ,R ,a ,b ,(prove G a R) ,(prove G b R))]
-    [ $ ~(,a \/ ,b) $  '(tauto_nor ,G ,R ,a ,b ,(prove G $ ~,a $ $ ,R /\ ~,b $))]
-    [ $ ,a /\ ,b $     '(tauto_an ,G ,R ,a ,b ,(prove G a $ ,R /\ ,b $))]
+    [ $ ~(,a \/ ,b) $  '(tauto_nor ,G ,R ,a ,b ,(prove G $ ~,a $ $ ~,b -> ,R $))]
+    [ $ ,a /\ ,b $     '(tauto_an ,G ,R ,a ,b ,(prove G a $ ,b -> ,R $))]
     [ $ ~(,a /\ ,b) $  '(tauto_nan ,G ,R ,a ,b ,(prove G $ ~,a $ R) ,(prove G $ ~,b $ R))]
     [ $ ,a <-> ,b $    '(tauto_iff ,G ,R ,a ,b ,(prove G $ (,a -> ,b) /\ (,b -> ,a) $ R))]
     [ $ ~(,a <-> ,b) $ '(tauto_niff ,G ,R ,a ,b ,(prove G $ ~((,a -> ,b) /\ (,b -> ,a)) $ R))]
@@ -171,7 +168,7 @@ do {
     [ $ ~cad ,a ,b ,c $ '(tauto_ncad ,G ,R ,a ,b ,c ,(prove G $ ~(,a /\ ,b \/ ,a /\ ,c \/ ,b /\ ,c) $ R))]
     [ $ ,a $ '(tauto_push ,G ,R ,a ,(prove0 $ ,G /\ ,a $ R))])
 
-  (def (tauto refine t) '(tauto_start ,t ,(prove $ T. $ $ ~,t $ $ T. $)))
+  (def (tauto refine t) '(tauto_start ,t ,(prove $ T. $ $ ~,t $ $ F. $)))
 };
 
 -- Examples
@@ -992,8 +989,8 @@ pub theorem re2luk1 (ph ps ch: wff): $ ( ( ph -> ps ) -> ( ( ps -> ch ) -> ( ph 
 pub theorem re2luk2 (ph: wff): $ ( ( ~ ph -> ph ) -> ph ) $= tauto;
 pub theorem re2luk3 (ph ps: wff): $ ( ph -> ( ~ ph -> ps ) ) $= tauto;
 
--- Tactic to view the generated proofs (copied from peano.mm1)
-do {
-  (def (get-proof x) (nth 1 @ @ nth 6 @ get-decl x))
-  (display @ pp @ get-proof 'pm2_48)
-};
+-- -- Tactic to view the generated proofs (copied from peano.mm1)
+-- do {
+--   (def (get-proof x) (nth 1 @ @ nth 6 @ get-decl x))
+--   (display @ pp @ get-proof 'pm2_48)
+-- };
