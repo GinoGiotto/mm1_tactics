@@ -86,10 +86,11 @@ term eq (a b: set): wff; infixl eq: $=s$ prec 50;
 theorem tauto_start (h: $ T. -> ~t -> F. $): $ t $ = '(ax_mp ax_tru @ ax_mp (ax_mp ax_tru h) ax_3);
 theorem tauto_unfold (h1: $ G -> a -> b -> R $) (h2: $ c -> b $): $ G -> a -> c -> R $ = '(syld (a1i @ com12 @ syl mpcom h2) h1);
 theorem tauto_push (h: $ G /\ a -> R $): $ G -> a -> R $ = '(expi h);
+theorem tauto_nn (h: $ G -> a -> R $): $ G -> ~~a -> R $ = '(syld h @ a1i notnotr);
+theorem tauto_pop (h: $ G -> a -> R $): $ G /\ a -> R $ = '(impneg @ tauto_nn h);
 theorem tauto_anr: $ G /\ a -> a $ = '(impneg @ a1i notnotr);
 theorem tauto_anwl (h: $ G -> b $): $ G /\ a -> b $ = '(impneg @ a1d h);
 theorem tauto_done (h1: $ G -> ~a $) (h2: $ G -> a $): $ G -> F. $ = '(mpd h2 @ syl con2 @ a1d h1);
-theorem tauto_nn (h: $ G -> a -> R $): $ G -> ~~a -> R $ = '(syld h @ a1i notnotr);
 theorem tauto_tru (h: $ G -> R $): $ G -> T. -> R $ = '(a1d h);
 theorem tauto_ntru: $ G -> ~T. -> R $ = '(syl con1 @ a1i @ a1i ax_tru);
 theorem tauto_fal: $ G -> F. -> R $ = 'tauto_ntru;
@@ -101,22 +102,34 @@ theorem tauto_an (h: $ G -> a -> b -> R $): $ G -> a /\ b -> R $ = '(tauto_nim @
 theorem tauto_nor (h: $ G -> ~a -> ~b -> R $): $ G -> ~(a \/ b) -> R $ = '(tauto_nim h);
 theorem tauto_nan (h1: $ G -> ~a -> R $) (h2: $ G -> ~b -> R $): $ G -> ~(a /\ b) -> R $ = '(tauto_nn @ tauto_im h1 h2);
 theorem tauto_iff (h1: $ G -> a -> b -> R $) (h2: $ G -> ~a -> ~b -> R $): $ G -> (a <-> b) -> R $ =
-'(tauto_an @ tauto_im (tauto_push @ tauto_im (impneg @ syld h2 @ a1i notnotr) (syl pm2_21 tauto_anr)) @
+'(tauto_an @ tauto_im (tauto_push @ tauto_im (tauto_pop h2) (syl pm2_21 tauto_anr)) @
   syl (com12 @ com23 @ syld (com12 @ com23 mpcom) mpcom) h1);
 theorem tauto_niff (h1: $ G -> a -> ~b -> R $) (h2: $ G -> ~a -> b -> R $): $ G -> ~(a <-> b) -> R $ =
 '(tauto_nan (tauto_nim h1) (tauto_nim @ com23 h2));
-theorem tauto__nan (h: $ G -> ~(a /\ b) -> R $): $ G -> a -/\ b -> R $ = 'h;
-theorem tauto_nnan (h: $ G -> a /\ b -> R $): $ G -> ~(a -/\ b) -> R $ = '(tauto_nn h);
-theorem tauto__nor (h: $ G -> ~(a \/ b) -> R $): $ G -> a -\/ b -> R $ = 'h;
-theorem tauto_nnor (h: $ G -> a \/ b -> R $): $ G -> ~(a -\/ b) -> R $ = '(tauto_nn h);
-theorem tauto_xor (h: $ G -> ~(a <-> b) -> R $): $ G -> (a \/_ b) -> R $ = 'h;
-theorem tauto_nxor (h: $ G -> (a <-> b) -> R $): $ G -> ~(a \/_ b) -> R $ = '(tauto_nn h);
-theorem tauto_ifp (h: $ G -> ((a /\ b) \/ (~a /\ c)) -> R $): $ G -> ifp a b c -> R $ = 'h;
-theorem tauto_nifp (h: $ G -> ~((a /\ b) \/ (~a /\ c)) -> R $): $ G -> ~ifp a b c -> R $ = 'h;
+theorem tauto__nan (h1: $ G -> ~a -> R $) (h2: $ G -> ~b -> R $): $ G -> a -/\ b -> R $ = '(tauto_nan h1 h2);
+theorem tauto_nnan (h: $ G -> a -> b -> R $): $ G -> ~(a -/\ b) -> R $ = '(tauto_nn @ tauto_an h);
+theorem tauto__nor (h: $ G -> ~a -> ~b -> R $): $ G -> a -\/ b -> R $ = '(tauto_nor h);
+theorem tauto_nnor (h1: $ G -> a -> R $) (h2: $ G -> b -> R $): $ G -> ~(a -\/ b) -> R $ = '(tauto_nn @ tauto_or h1 h2);
+theorem tauto_xor (h1: $ G -> a -> ~b -> R $) (h2: $ G -> ~a -> b -> R $): $ G -> (a \/_ b) -> R $ = '(tauto_niff h1 h2);
+theorem tauto_nxor (h1: $ G -> a -> b -> R $) (h2: $ G -> ~a -> ~b -> R $): $ G -> ~(a \/_ b) -> R $ = '(tauto_nn @ tauto_iff h1 h2);
+theorem tauto_ifp (h1: $ G -> a -> b -> R $) (h2: $ G -> ~a -> c -> R $): $ G -> ifp a b c -> R $ = '(tauto_or (tauto_an h1) (tauto_an h2));
+theorem tauto_nifp (h1: $ G -> a -> ~b -> R $) (h2: $ G -> ~a -> ~c -> R $): $ G -> ~ifp a b c -> R $ =
+'(tauto_nor @ tauto_nan (syl (a2i @ com23 @ tauto_nan pm2_24 @ a1i mpcom) h2) @
+  com23 @ tauto_nan (tauto_nn h1) @ ax_mp id @ ja (com12 @ tauto_push @ tauto_push @ a1d @ tauto_pop @ tauto_pop h2) @
+  com12 @ tauto_push @ a1d @ tauto_pop h1);
 theorem tauto_had (h: $ G -> (a \/_ b \/_ c) -> R $): $ G -> had a b c -> R $ = 'h;
 theorem tauto_nhad (h: $ G -> ~(a \/_ b \/_ c) -> R $): $ G -> ~had a b c -> R $ = 'h;
-theorem tauto_cad (h: $ G -> (a /\ b \/ a /\ c \/ b /\ c) -> R $): $ G -> cad a b c -> R $ = 'h;
-theorem tauto_ncad (h: $ G -> ~(a /\ b \/ a /\ c \/ b /\ c) -> R $): $ G -> ~cad a b c -> R $ = 'h;
+theorem tauto_cad (h1: $ G -> a -> b \/ c -> R $) (h2: $ G -> b -> c -> R $): $ G -> cad a b c -> R $ =
+'(tauto_or (tauto_or (tauto_an @ tauto_unfold h1 pm2_24) (tauto_an @ tauto_unfold h1 ax_1)) (tauto_an h2));
+theorem tauto_ncad (h1: $ G -> ~a -> ~(b /\ c) -> R $) (h2: $ G -> ~b -> ~c -> R $): $ G -> ~cad a b c -> R $ =
+(focus
+  (have 'h11 '(tauto_unfold h1 (ax_mp (tauto_anwl id) con3)))
+  (have 'h12 '(tauto_unfold h1 (ax_mp tauto_anr con3)))
+  '(tauto_nor @ tauto_nor @ tauto_nan _ @ tauto_push @ tauto_nan _ _)
+  '(tauto_push @ tauto_nan _ @ tauto_push @ a1d @ tauto_pop @ tauto_pop h12)
+  '(a1d @ tauto_nan (tauto_pop h11) (tauto_pop h12))
+  '(tauto_push @ a1d @ tauto_pop @ tauto_pop @ com23 h11)
+  '(tauto_push @ a1d @ tauto_pop @ tauto_pop h2));
 
 --- Tactics for tauto ---
 
@@ -157,18 +170,18 @@ do {
     [ $ ~(,a /\ ,b) $  '(tauto_nan ,G ,R ,a ,b ,(prove G $ ~,a $ R) ,(prove G $ ~,b $ R))]
     [ $ ,a <-> ,b $    '(tauto_iff ,G ,R ,a ,b ,(prove G a $ ,b -> ,R $) ,(prove G $ ~,a $ $ ~,b -> ,R $))]
     [ $ ~(,a <-> ,b) $ '(tauto_niff ,G ,R ,a ,b ,(prove G a $ ~,b -> ,R $) ,(prove G $ ~,a $ $ ,b -> ,R $))]
-    [ $ ,a -/\ ,b $    '(tauto__nan ,G ,R ,a ,b ,(prove G $ ~(,a /\ ,b) $ R))]
-    [ $ ~(,a -/\ ,b) $ '(tauto_nnan ,G ,R ,a ,b ,(prove G $ ,a /\ ,b $ R))]
-    [ $ ,a \/_ ,b $    '(tauto_xor ,G ,R ,a ,b ,(prove G $ ~(,a <-> ,b) $ R))]
-    [ $ ~(,a \/_ ,b) $ '(tauto_nxor ,G ,R ,a ,b ,(prove G $ ,a <-> ,b $ R))]
-    [ $ ,a -\/ ,b $    '(tauto__nor ,G ,R ,a ,b ,(prove G $ ~(,a \/ ,b) $ R))]
-    [ $ ~(,a -\/ ,b) $ '(tauto_nnor ,G ,R ,a ,b ,(prove G $ ,a \/ ,b $ R))]
-    [ $ ifp ,a ,b ,c $  '(tauto_ifp ,G ,R ,a ,b ,c ,(prove G $ (,a /\ ,b) \/ (~,a /\ ,c) $ R))]
-    [ $ ~ifp ,a ,b ,c $ '(tauto_nifp ,G ,R ,a ,b ,c ,(prove G $ ~((,a /\ ,b) \/ (~,a /\ ,c)) $ R))]
+    [ $ ,a -/\ ,b $    '(tauto__nan ,G ,R ,a ,b ,(prove G $ ~,a $ R) ,(prove G $ ~,b $ R))]
+    [ $ ~(,a -/\ ,b) $ '(tauto_nnan ,G ,R ,a ,b ,(prove G a $ ,b -> ,R $))]
+    [ $ ,a \/_ ,b $    '(tauto_xor ,G ,R ,a ,b ,(prove G a $ ~,b -> ,R $) ,(prove G $ ~,a $ $ ,b -> ,R $))]
+    [ $ ~(,a \/_ ,b) $ '(tauto_nxor ,G ,R ,a ,b ,(prove G a $ ,b -> ,R $) ,(prove G $ ~,a $ $ ~,b -> ,R $))]
+    [ $ ,a -\/ ,b $    '(tauto__nor ,G ,R ,a ,b ,(prove G $ ~,a $ $ ~,b -> ,R $))]
+    [ $ ~(,a -\/ ,b) $ '(tauto_nnor ,G ,R ,a ,b ,(prove G a R) ,(prove G b R))]
+    [ $ ifp ,a ,b ,c $  '(tauto_ifp ,G ,R ,a ,b ,c ,(prove G a $ ,b -> ,R $) ,(prove G $ ~,a $ $ ,c -> ,R $))]
+    [ $ ~ifp ,a ,b ,c $ '(tauto_nifp ,G ,R ,a ,b ,c ,(prove G a $ ~,b -> ,R $) ,(prove G $ ~,a $ $ ~,c -> ,R $))]
     [ $ had ,a ,b ,c $  '(tauto_had ,G ,R ,a ,b ,c ,(prove G $ ,a \/_ ,b \/_ ,c $ R))]
     [ $ ~had ,a ,b ,c $ '(tauto_nhad ,G ,R ,a ,b ,c ,(prove G $ ~(,a \/_ ,b \/_ ,c) $ R))]
-    [ $ cad ,a ,b ,c $  '(tauto_cad ,G ,R ,a ,b ,c ,(prove G $ ,a /\ ,b \/ ,a /\ ,c \/ ,b /\ ,c $ R))]
-    [ $ ~cad ,a ,b ,c $ '(tauto_ncad ,G ,R ,a ,b ,c ,(prove G $ ~(,a /\ ,b \/ ,a /\ ,c \/ ,b /\ ,c) $ R))]
+    [ $ cad ,a ,b ,c $  '(tauto_cad ,G ,R ,a ,b ,c ,(prove G a $ ,b \/ ,c -> ,R $) ,(prove G b $ ,c -> ,R $))]
+    [ $ ~cad ,a ,b ,c $ '(tauto_ncad ,G ,R ,a ,b ,c ,(prove G $ ~,a $ $ ~(,b /\ ,c) -> ,R $) ,(prove G $ ~,b $ $ ~,c -> ,R $))]
     [ $ ,a $ '(tauto_push ,G ,R ,a ,(prove0 $ ,G /\ ,a $ R))])
 
   (def (tauto refine t) '(tauto_start ,t ,(prove $ T. $ $ ~,t $ $ F. $)))
