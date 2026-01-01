@@ -92,7 +92,10 @@ theorem tauto_not (h: $ G -> a -> R $): $ G -> ~a \/ R $ = '(syld h @ a1i notnot
 theorem tauto_pop (h: $ G -> a -> R $): $ G /\ a -> R $ = '(impneg @ tauto_not h);
 theorem tauto_anr: $ G /\ a -> a $ = '(impneg @ a1i notnotr);
 theorem tauto_anwl (h: $ G -> b $): $ G /\ a -> b $ = '(impneg @ a1d h);
-theorem tauto_done (h1: $ G -> ~a $) (h2: $ G -> a $): $ G -> F. $ = '(mpd h2 @ syl con2 @ a1d h1);
+theorem tauto_ndone (h: $ G -> ~a $): $ G -> a -> R $ = '(syl pm2_21 h);
+theorem tauto_done (h: $ G -> a $): $ G -> a \/ R $ = '(syl pm2_24 h);
+theorem tauto_nskip (h: $ G -> R $): $ G -> a -> R $ = '(a1d h);
+theorem tauto_skip (h: $ G -> R $): $ G -> a \/ R $ = '(a1d h);
 theorem tauto_ntru (h: $ G -> R $): $ G -> T. -> R $ = '(a1d h);
 theorem tauto_tru: $ G -> T. \/ R $ = '(syl con1 @ a1i @ a1i ax_tru);
 theorem tauto_nfal: $ G -> F. -> R $ = 'tauto_tru;
@@ -143,20 +146,11 @@ do {
       [#undef (first G @ fn (b p) (f b '(tauto_anwl ,G ,a ,b ,p)))]
       [x x]])
 
-  --| Proves `G -> F.`
-  (def (prove1 G)
-    @ match
-      (first G @ fn (a p) @ match a
-        [$ ~,a $ (first G @ fn (b q) @ if {a == b} '(tauto_done ,G ,a ,p ,q))]
-        [_])
-    [#undef (error "failed")]
-    [x x])
-
   --| Proves `G -> R`
   (def (prove0 G R) @ match R
     [$ ,a -> ,R $ (proveN G a R)]
     [$ ,a \/ ,R $ (proveP G a R)]
-    [$ F. $ (prove1 G)])
+    [$ F. $ (error "failed")])
 
   --| Proves `G -> t -> R`
   (def (proveN G t R) @ match t
@@ -173,7 +167,12 @@ do {
     [ $ ifp ,a ,b ,c $  '(tauto_nifp ,G ,R ,a ,b ,c ,(proveN G a $ ,b -> ,R $) ,(proveP G a $ ,c -> ,R $))]
     [ $ had ,a ,b ,c $  '(tauto_nhad ,G ,R ,a ,b ,c ,(proveN G $ ,a \/_ ,b \/_ ,c $ R))]
     [ $ cad ,a ,b ,c $  '(tauto_ncad ,G ,R ,a ,b ,c ,(proveN G a $ ,b \/ ,c -> ,R $) ,(proveN G b $ ,c -> ,R $))]
-    [ $ ,a $            '(tauto_npush ,G ,R ,a ,(prove0 $ ,G /\ ,a $ R))])
+    [ $ ,a $
+      (def b $ ~,a $)
+      (match (first G @ fn (c p) @ if {c == a} #t @ if {c == b} '(tauto_ndone ,G ,R ,a ,p))
+        [#t '(tauto_nskip ,G ,R ,a ,(prove0 G R))]
+        [#undef '(tauto_npush ,G ,R ,a ,(prove0 $ ,G /\ ,a $ R))]
+        [x x])])
 
   --| Proves `G -> t \/ R`
   (def (proveP G t R) @ match t
@@ -190,7 +189,12 @@ do {
     [ $ ifp ,a ,b ,c $ '(tauto_ifp ,G ,R ,a ,b ,c ,(proveN G a $ ,b \/ ,R $) ,(proveP G a $ ,c \/ ,R $))]
     [ $ had ,a ,b ,c $ '(tauto_had ,G ,R ,a ,b ,c ,(proveP G $ ,a \/_ ,b \/_ ,c $ R))]
     [ $ cad ,a ,b ,c $ '(tauto_cad ,G ,R ,a ,b ,c ,(proveP G a $ (,b /\ ,c) \/ ,R $) ,(proveP G b $ ,c \/ ,R $))]
-    [ $ ,a $           '(tauto_push ,G ,R ,a ,(prove0 $ ,G /\ ~,a $ R))])
+    [ $ ,a $
+      (def b $ ~,a $)
+      (match (first G @ fn (c p) @ if {c == b} #t @ if {c == a} '(tauto_done ,G ,R ,a ,p))
+        [#t '(tauto_skip ,G ,R ,a ,(prove0 G R))]
+        [#undef '(tauto_push ,G ,R ,a ,(prove0 $ ,G /\ ,b $ R))]
+        [x x])])
 
   (def (tauto refine t) '(tauto_start ,t ,(proveP $ T. $ t $ F. $)))
 };
