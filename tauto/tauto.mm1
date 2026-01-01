@@ -81,134 +81,97 @@ pure sort set;
 term al {x: set} (ph: wff x): wff; prefix al: $A.$ prec 41;
 term eq (a b: set): wff; infixl eq: $=s$ prec 50;
 
+--- Theorems for tauto ---
+
+theorem tauto_start (h: $ T. -> ~t -> ~T. $): $ t $ = '(ax_mp ax_tru @ ax_mp (ax_mp ax_tru h) ax_3);
+theorem tauto_unfold (h1: $ G -> a -> ~(R /\ b) $) (h2: $ c -> b $): $ G -> a -> ~(R /\ c) $ =
+'(syld (a1i @ ax_mp (ax_mp (ax_mp (ax_mp h2 con3) imim2) con3) con3) h1);
+theorem tauto_nn (h: $ G -> a -> ~R $): $ G -> ~~a -> ~R $ = '(syld h @ a1i notnotr);
+theorem tauto_tru (h: $ G -> ~R $): $ G -> T. -> ~R $ = '(a1d h);
+theorem tauto_ntru: $ G -> ~T. -> ~R $ = '(syl con3 @ a1i @ a1i ax_tru);
+theorem tauto_fal: $ G -> F. -> ~R $ = 'tauto_ntru;
+theorem tauto_nfal (h: $ G -> ~R $): $ G -> ~F. -> ~R $ = '(tauto_nn @ tauto_tru h);
+theorem tauto_im (h1: $ G -> ~a -> ~R $) (h2: $ G -> b -> ~R $): $ G -> (a -> b) -> ~R $ = '(jad h1 h2);
+theorem tauto_nim (h: $ G -> a -> ~(R /\ ~b) $): $ G -> ~(a -> b) -> ~R $ =
+'(syl (syl con3 @ com23 @ ax_mp (syl (ax_mp notnotr imim2) notnotr) imim2) h);
+theorem tauto_or (h1: $ G -> a -> ~R $) (h2: $ G -> b -> ~R $): $ G -> a \/ b -> ~R $ = '(tauto_im (tauto_nn h1) h2);
+theorem tauto_an (h: $ G -> a -> ~(R /\ b) $): $ G -> a /\ b -> ~R $ = '(tauto_nim @ tauto_unfold h notnotr);
+theorem tauto_nor (h: $ G -> ~a -> ~(R /\ ~b) $): $ G -> ~(a \/ b) -> ~R $ = '(tauto_nim h);
+theorem tauto_nan (h1: $ G -> ~a -> ~R $) (h2: $ G -> ~b -> ~R $): $ G -> ~(a /\ b) -> ~R $ = '(tauto_nn @ tauto_im h1 h2);
+theorem tauto_iff (h: $ G -> (a -> b) /\ (b -> a) -> ~R $): $ G -> (a <-> b) -> ~R $ = 'h;
+theorem tauto_niff (h: $ G -> ~((a -> b) /\ (b -> a)) -> ~R $): $ G -> ~(a <-> b) -> ~R $ = 'h;
+theorem tauto__nan (h: $ G -> ~(a /\ b) -> ~R $): $ G -> a -/\ b -> ~R $ = 'h;
+theorem tauto_nnan (h: $ G -> a /\ b -> ~R $): $ G -> ~(a -/\ b) -> ~R $ = '(tauto_nn h);
+theorem tauto__nor (h: $ G -> ~(a \/ b) -> ~R $): $ G -> a -\/ b -> ~R $ = 'h;
+theorem tauto_nnor (h: $ G -> a \/ b -> ~R $): $ G -> ~(a -\/ b) -> ~R $ = '(tauto_nn h);
+theorem tauto_xor (h: $ G -> ~(a <-> b) -> ~R $): $ G -> (a \/_ b) -> ~R $ = 'h;
+theorem tauto_nxor (h: $ G -> (a <-> b) -> ~R $): $ G -> ~(a \/_ b) -> ~R $ = '(tauto_nn h);
+theorem tauto_ifp (h: $ G -> ((a /\ b) \/ (~a /\ c)) -> ~R $): $ G -> ifp a b c -> ~R $ = 'h;
+theorem tauto_nifp (h: $ G -> ~((a /\ b) \/ (~a /\ c)) -> ~R $): $ G -> ~ifp a b c -> ~R $ = 'h;
+theorem tauto_had (h: $ G -> (a \/_ b \/_ c) -> ~R $): $ G -> had a b c -> ~R $ = 'h;
+theorem tauto_nhad (h: $ G -> ~(a \/_ b \/_ c) -> ~R $): $ G -> ~had a b c -> ~R $ = 'h;
+theorem tauto_cad (h: $ G -> (a /\ b \/ a /\ c \/ b /\ c) -> ~R $): $ G -> cad a b c -> ~R $ = 'h;
+theorem tauto_ncad (h: $ G -> ~(a /\ b \/ a /\ c \/ b /\ c) -> ~R $): $ G -> ~cad a b c -> ~R $ = 'h;
+theorem tauto_pop (h: $ G -> a -> ~R $): $ G -> ~(R /\ a) $ = '(syl notnot @ syl con2 h);
+theorem tauto_push (h: $ G /\ a -> ~R $): $ G -> a -> ~R $ = '(expi h);
+theorem tauto_anr: $ G /\ a -> a $ = '(impneg @ a1i notnotr);
+theorem tauto_anwl (h: $ G -> b $): $ G /\ a -> b $ = '(impneg @ a1d h);
+theorem tauto_done (h1: $ G -> ~a $) (h2: $ G -> a $): $ G -> ~T. $ = '(mpd h2 @ syl con2 @ a1d h1);
+
 --- Tactics for tauto ---
 
 do {
--- Find antecendents that prove the goal
-(def (check_middle refine t)
-  (match t
-    [ $ ,x -> ~,y -> ,y -> ,z $  (refine t '(a1i pm2_21))]
-    [ $ ,x -> ,y -> ~,y -> ,z $  (refine t '(a1i pm2_24))]
-    [ $ ,x -> ,y -> ,z -> ,w $   (refine t '(com23 (expi ,(fn (refine t) (check_middle refine t)))))]
-    [ $ ,x -> ,y -> ,y $         (refine t 'idd)]
-    [ _  (refine t '(a1d ,(fn (refine t) (unfold1 refine t))))]))
+  --| Calls `f a (|- G -> a)` for each `a` in `G`, returning the first non-`#undef`
+  (def (first G f) @ match G
+    [$ T. $]
+    [$ ,G /\ ,a $ @ match (f a '(tauto_anr ,G ,a))
+      [#undef (first G @ fn (b p) (f b '(tauto_anwl ,G ,a ,b ,p)))]
+      [x x]])
 
--- Base case for searching antecedents that prove the goal
-(def (check_first refine t)
-  (match t
-    [ $ ,x -> ,y -> ,x $   (refine t 'ax_1)]
-    [ $ ,x -> ,y -> ,y $   (refine t 'idd)]
-    [ $ ~,x -> ,x -> ,y $  (refine t 'pm2_21)]
-    [ $ ,x -> ~,x -> ,y $  (refine t 'pm2_24)]
-    [ _  (refine t check_middle)]))
+  --| Proves `G -> ~T.`
+  (def (prove1 G)
+    @ match
+      (first G @ fn (a p) @ match a
+        [$ ~,a $ (first G @ fn (b q) @ if {a == b} '(tauto_done ,G ,a ,p ,q))]
+        [_])
+    [#undef (error "failed")]
+    [x x])
 
--- Bring statements into implicational normal form
-(def (unfold1 refine t)
-  (match t
-    [ $ ~(,x -> ~,y) -> ,z $  (refine t '(impneg (notnotrddd ,(fn (refine t) (unfold refine t)))))]
-    [ $ ~(,x -> ,y) -> ,z $   (refine t '(impneg ,(fn (refine t) (unfold refine t))))]
-    [ $ ,x -> ,y -> ,z $      (refine t check_first)]
-    [ _  (error "Statement not provable")]))
+  --| Proves `G -> ~R`
+  (def (prove0 G R) @ match R
+    [$ ,R /\ ,a $ '(tauto_pop ,G ,R ,a ,(prove G a R))]
+    [$ T. $ (prove1 G)])
 
--- Bring statements into implicational normal form, eliminate truth constants
-(def (unfold refine t)
-  (match t
-    [ $ ~(,x -> T.) -> ,z $   (refine t '(impneg (a1i (ax_mp (a1i ax_tru) con1))))]
-    [ $ ~(,x -> ~T.) -> ,z $  (refine t '(impneg (a1d ,(fn (refine t) (unfold refine t)))))]
-    [ $ ~(,x -> ~,y) -> ,z $  (refine t '(impneg (notnotrddd ,(fn (refine t) (unfold refine t)))))]
-    [ $ ~(,x -> ,y) -> ,z $   (refine t '(impneg ,(fn (refine t) (unfold refine t))))]
-    [ $ ~T. -> ,x $           (refine t '(ax_mp (a1i ax_tru) con1))]
-    [ $ T. -> ,x $            (refine t '(a1i ,(fn (refine t) (unfold refine t))))]
-    [ $ ,x -> ,x $            (refine t 'id)]
-    [ $ ,x -> ,y -> ,z $      (refine t check_first)]
-    [ _  (error "Statement not provable")]))
+  --| Proves `G -> t -> ~R`
+  (def (prove G t R) @ match t
+    [ $ T. $           '(tauto_tru ,G ,R ,(prove0 G R))]
+    [ $ ~T. $          '(tauto_ntru ,G ,R)]
+    [ $ F. $           '(tauto_fal ,G ,R)]
+    [ $ ~F. $          '(tauto_nfal ,G ,R ,(prove0 G R))]
+    [ $ ~~,a $         '(tauto_nn ,G ,R ,a ,(prove G a R))]
+    [ $ ,a -> ,b $     '(tauto_im ,G ,R ,a ,b ,(prove G $ ~,a $ R) ,(prove G b R))]
+    [ $ ~(,a -> ,b) $  '(tauto_nim ,G ,R ,a ,b ,(prove G a $ ,R /\ ~,b $))]
+    [ $ ,a \/ ,b $     '(tauto_or ,G ,R ,a ,b ,(prove G a R) ,(prove G b R))]
+    [ $ ~(,a \/ ,b) $  '(tauto_nor ,G ,R ,a ,b ,(prove G $ ~,a $ $ ,R /\ ~,b $))]
+    [ $ ,a /\ ,b $     '(tauto_an ,G ,R ,a ,b ,(prove G a $ ,R /\ ,b $))]
+    [ $ ~(,a /\ ,b) $  '(tauto_nan ,G ,R ,a ,b ,(prove G $ ~,a $ R) ,(prove G $ ~,b $ R))]
+    [ $ ,a <-> ,b $    '(tauto_iff ,G ,R ,a ,b ,(prove G $ (,a -> ,b) /\ (,b -> ,a) $ R))]
+    [ $ ~(,a <-> ,b) $ '(tauto_niff ,G ,R ,a ,b ,(prove G $ ~((,a -> ,b) /\ (,b -> ,a)) $ R))]
+    [ $ ,a -/\ ,b $    '(tauto__nan ,G ,R ,a ,b ,(prove G $ ~(,a /\ ,b) $ R))]
+    [ $ ~(,a -/\ ,b) $ '(tauto_nnan ,G ,R ,a ,b ,(prove G $ ,a /\ ,b $ R))]
+    [ $ ,a \/_ ,b $    '(tauto_xor ,G ,R ,a ,b ,(prove G $ ~(,a <-> ,b) $ R))]
+    [ $ ~(,a \/_ ,b) $ '(tauto_nxor ,G ,R ,a ,b ,(prove G $ ,a <-> ,b $ R))]
+    [ $ ,a -\/ ,b $    '(tauto__nor ,G ,R ,a ,b ,(prove G $ ~(,a \/ ,b) $ R))]
+    [ $ ~(,a -\/ ,b) $ '(tauto_nnor ,G ,R ,a ,b ,(prove G $ ,a \/ ,b $ R))]
+    [ $ ifp ,a ,b ,c $  '(tauto_ifp ,G ,R ,a ,b ,c ,(prove G $ (,a /\ ,b) \/ (~,a /\ ,c) $ R))]
+    [ $ ~ifp ,a ,b ,c $ '(tauto_nifp ,G ,R ,a ,b ,c ,(prove G $ ~((,a /\ ,b) \/ (~,a /\ ,c)) $ R))]
+    [ $ had ,a ,b ,c $  '(tauto_had ,G ,R ,a ,b ,c ,(prove G $ ,a \/_ ,b \/_ ,c $ R))]
+    [ $ ~had ,a ,b ,c $ '(tauto_nhad ,G ,R ,a ,b ,c ,(prove G $ ~(,a \/_ ,b \/_ ,c) $ R))]
+    [ $ cad ,a ,b ,c $  '(tauto_cad ,G ,R ,a ,b ,c ,(prove G $ ,a /\ ,b \/ ,a /\ ,c \/ ,b /\ ,c $ R))]
+    [ $ ~cad ,a ,b ,c $ '(tauto_ncad ,G ,R ,a ,b ,c ,(prove G $ ~(,a /\ ,b \/ ,a /\ ,c \/ ,b /\ ,c) $ R))]
+    [ $ ,a $ '(tauto_push ,G ,R ,a ,(prove0 $ ,G /\ ,a $ R))])
 
--- Split the conclusion
-(def (conclusion refine t)
-  (match t
-    [ $ ,x -> ~~,y $         (refine t '(notnotd ,(fn (refine t) (conclusion refine t))))]
-    [ $ ,x -> ~(,y -> ,z) $  (refine t '(jcnd ,(fn (refine t) (conclusion refine t)) ,(fn (refine t) (conclusion refine t))))]
-    [ $ ,x -> ,y -> ,z $     (refine t middle_antecedent)]
-    [ $ T. $                 (refine t 'ax_tru)]
-    [ $ ,x -> T. $           (refine t '(a1i ax_tru))]
-    [ _  (refine t unfold)]))
-
--- Split the remaining antecendents
-(def (middle_antecedent refine t)
-  (match t
-    [ $ ,x -> ~(,y -> ,z) -> ,w $  (refine t '(impnegd ,(fn (refine t) (middle_antecedent refine t))))]
-    [ $ ,x -> ~~,y -> ,z $         (refine t '(notnotrddd ,(fn (refine t) (middle_antecedent refine t))))]
-    [ $ ,x -> (,y -> ,z) -> ,w $   (refine t '(jad ,(fn (refine t) (middle_antecedent refine t)) ,(fn (refine t) (middle_antecedent refine t))))]
-    [ $ ,x -> ~,y -> ,z $          (refine t '(expn ,(fn (refine t) (middle_antecedent refine t))))]
-    [ $ ,x -> ,y -> ,z $           (refine t '(expi ,(fn (refine t) (middle_antecedent refine t))))]
-    [ _  (refine t conclusion)]))
-
--- Split the first antecedent
-(def (antecedent refine t)
-  (match t
-    [ $ ~(,x -> ,y) -> ,z $  (refine t '(impneg ,(fn (refine t) (antecedent refine t))))]
-    [ $ ~~,x -> ,y $         (refine t '(notnotrdd ,(fn (refine t) (antecedent refine t))))]
-    [ $ (,x -> ,y) -> ,z $   (refine t '(ja ,(fn (refine t) (antecedent refine t)) ,(fn (refine t) (antecedent refine t))))]
-    [ _  (refine t middle_antecedent)]))
-
--- Split conjunctions at the top level
-(def (start refine t)
-  (match t
-    [ $ ~~,x $          (refine t '(notnoti ,(fn (refine t) (start refine t))))]
-    [ $ ~(,x -> ~,y) $  (refine t '(split ,(fn (refine t) (start refine t)) ,(fn (refine t) (start refine t))))]
-    [ $ ~(,x -> ,y) $   (refine t '(splitn ,(fn (refine t) (start refine t)) ,(fn (refine t) (start refine t))))]
-    [ _  (refine t antecedent)]))
-
--- Translate terms into primitive symbols.
-(def (trans t)
-  (match t
-    [ $ ,a -> ,b $     (let ([x (trans ,a)] [y (trans ,b)]) $ ,x -> ,y $)]
-    [ $ ,a /\ ,b $     (let ([x (trans ,a)] [y (trans ,b)]) $ ~(,x -> ~,y) $)]
-    [ $ ~,a $          (let ([x (trans ,a)]) $ ~,x $)]
-    [ $ ,a <-> ,b $    (let ([x (trans ,a)] [y (trans ,b)]) $ ~((,x -> ,y) -> ~(,y -> ,x)) $)]
-    [ $ ,a \/ ,b $     (let ([x (trans ,a)] [y (trans ,b)]) $ ~,x -> ,y $)]
-    [ $ ,a -/\ ,b $    (let ([x (trans ,a)] [y (trans ,b)]) $ ~~(,x -> ~,y) $)]
-    [ $ F. $ $ ~T. $]
-    [ $ ,a \/_ ,b $    (let ([x (trans ,a)] [y (trans ,b)]) $ ~~((,x -> ,y) -> ~(,y -> ,x)) $)]
-    [ $ ,a -\/ ,b $    (let ([x (trans ,a)] [y (trans ,b)]) $ ~(~,x -> ,y) $)]
-    [ $ ifp ,a ,b ,c $ (let ([x (trans ,a)] [y (trans ,b)] [z (trans ,c)]) $ ~~(,x -> ~,y) -> ~(~,x -> ~,z) $)]
-    [ $ had ,a ,b ,c $ (let ([x (trans ,a)] [y (trans ,b)] [z (trans ,c)]) $ ~~((~~((,x -> ,y) -> ~(,y -> ,x)) -> ,z) -> ~(,z -> ~~((,x -> ,y) -> ~(,y -> ,x)))) $)]
-    [ $ cad ,a ,b ,c $ (let ([x (trans ,a)] [y (trans ,b)] [z (trans ,c)]) $ ~(~~(,x -> ~,y) -> ~(,x -> ~,z)) -> ~(,y -> ~,z) $)]
-    [ $ ,a $ ,a]))
-
--- Construct the proof of defintional unfolding
-(def (trans1 t)
-  (match t
-    [ $ ,a -> ,b $     (let ([x (trans1 ,a)] [y (trans1 ,b)]) $ ,x -> ,y $)]
-    [ $ ,a /\ ,b $     (let ([x (trans1 ,a)] [y (trans1 ,b)]) '(:unfold an (,a ,b) $ ~(,x -> ~,y) $))]
-    [ $ ~,a $          (let ([x (trans1 ,a)]) $ ~,x $)]
-    [ $ ,a <-> ,b $    (let ([x (trans1 ,a)] [y (trans1 ,b)]) '(:unfold iff (,a ,b) $ ~((,x -> ,y) -> ~(,y -> ,x)) $))]
-    [ $ ,a \/ ,b $     (let ([x (trans1 ,a)] [y (trans1 ,b)]) '(:unfold or (,a ,b) $ ~,x -> ,y $))]
-    [ $ ,a -/\ ,b $    (let ([x (trans1 ,a)] [y (trans1 ,b)]) '(:unfold nan (,a ,b) $ ~~(,x -> ~,y) $))]
-    [ $ F. $  '(:unfold fal () $ ~T. $)]
-    [ $ ,a \/_ ,b $    (let ([x (trans1 ,a)] [y (trans1 ,b)]) '(:unfold xor (,a ,b) $ ~~((,x -> ,y) -> ~(,y -> ,x)) $))]
-    [ $ ,a -\/ ,b $    (let ([x (trans1 ,a)] [y (trans1 ,b)]) '(:unfold nor (,a ,b) $ ~(~,x -> ,y) $))]
-    [ $ ifp ,a ,b ,c $ (let ([x (trans1 ,a)] [y (trans1 ,b)] [z (trans1 ,c)]) '(:unfold ifp (,a ,b ,c) $ ~~(,x -> ~,y) -> ~(~,x -> ~,z) $))]
-    [ $ had ,a ,b ,c $ (let ([x (trans1 ,a)] [y (trans1 ,b)] [z (trans1 ,c)]) '(:unfold had (,a ,b ,c) $ ~~((~~((,x -> ,y) -> ~(,y -> ,x)) -> ,z) -> ~(,z -> ~~((,x -> ,y) -> ~(,y -> ,x)))) $))]
-    [ $ cad ,a ,b ,c $ (let ([x (trans1 ,a)] [y (trans1 ,b)] [z (trans1 ,c)]) '(:unfold cad (,a ,b ,c) $ ~(~~(,x -> ~,y) -> ~(,x -> ~,z)) -> ~(,y -> ~,z) $))]
-    [ $ ,a $ ,a]))
-
--- Beginning of the tauto tactic
-(def (tauto refine t)
-  (match t
-    [ $ ,a -> ,b $     (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a -> ,b $ $ ,x1 -> ,y1 $ ,(refine $ ,x -> ,y $ start)))]
-    [ $ ,a /\ ,b $     (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a /\ ,b $ (:unfold an (,a ,b) $ ~(,x1 -> ~,y1) $) ,(refine $ ~(,x -> ~,y) $ start)))]
-    [ $ ~,a $          (let ([x (trans ,a)] [x1 (trans1 ,a)]) '(:conv $ ~,a $ $ ~,x1 $ ,(refine $ ~,x $ start)))]
-    [ $ ,a <-> ,b $    (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a <-> ,b $ (:unfold iff (,a ,b) $ ~((,x1 -> ,y1) -> ~(,y1 -> ,x1)) $) ,(refine $ ~((,x -> ,y) -> ~(,y -> ,x)) $ start)))]
-    [ $ ,a \/ ,b $     (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a \/ ,b $ (:unfold or (,a ,b) $ ~,x1 -> ,y1 $) ,(refine $ ~,x -> ,y $ start)))]
-    [ $ ,a -/\ ,b $    (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a -/\ ,b $ (:unfold nan (,a ,b) $ ~~(,x1 -> ~,y1) $) ,(refine $ ~~(,x -> ~,y) $ start)))]
-    [ $ ,a \/_ ,b $    (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a \/_ ,b $ (:unfold xor (,a ,b) $ ~~((,x1 -> ,y1) -> ~(,y1 -> ,x1)) $) ,(refine $ ~~((,x -> ,y) -> ~(,y -> ,x)) $ start)))]
-    [ $ ,a -\/ ,b $    (let ([x (trans ,a)] [y (trans ,b)] [x1 (trans1 ,a)] [y1 (trans1 ,b)]) '(:conv $ ,a -\/ ,b $ (:unfold nor (,a ,b) $ ~(~,x1 -> ,y1) $) ,(refine $ ~(~,x -> ,y) $ start)))]
-    [ $ ifp ,a ,b ,c $ (let ([x (trans ,a)] [y (trans ,b)] [z (trans ,c)] [x1 (trans1 ,a)] [y1 (trans1 ,b)] [z1 (trans1 ,c)]) '(:conv $ ifp ,a ,b ,c $ (:unfold ifp (,a ,b ,c) $ ~~(,x1 -> ~,y1) -> ~(~,x1 -> ~,z1) $) ,(refine $ ~~(,x -> ~,y) -> ~(~,x -> ~,z) $ start)))]
-    [ $ had ,a ,b ,c $ (let ([x (trans ,a)] [y (trans ,b)] [z (trans ,c)] [x1 (trans1 ,a)] [y1 (trans1 ,b)] [z1 (trans1 ,c)]) '(:conv $ had ,a ,b ,c $ (:unfold had (,a ,b ,c) $ ~~((~~((,x1 -> ,y1) -> ~(,y1 -> ,x1)) -> ,z1) -> ~(,z1 -> ~~((,x1 -> ,y1) -> ~(,y1 -> ,x1)))) $) ,(refine $ ~~((~~((,x -> ,y) -> ~(,y -> ,x)) -> ,z) -> ~(,z -> ~~((,x -> ,y) -> ~(,y -> ,x)))) $ start)))]
-    [ $ cad ,a ,b ,c $ (let ([x (trans ,a)] [y (trans ,b)] [z (trans ,c)] [x1 (trans1 ,a)] [y1 (trans1 ,b)] [z1 (trans1 ,c)]) '(:conv $ cad ,a ,b ,c $ (:unfold cad (,a ,b ,c) $ ~(~~(,x1 -> ~,y1) -> ~(,x1 -> ~,z1)) -> ~(,y1 -> ~,z1) $) ,(refine $ ~(~~(,x -> ~,y) -> ~(,x -> ~,z)) -> ~(,y -> ~,z) $ start)))]
-    [ $ T. $ (refine t 'ax_tru)]
-    [_ (error "Syntax not found or attempted proof of false")]))
+  (def (tauto refine t) '(tauto_start ,t ,(prove $ T. $ $ ~,t $ $ T. $)))
 };
 
 -- Examples
@@ -220,7 +183,7 @@ theorem _ (ph ps ch th ta: wff): $ ~(ph -> ~(ph -> ~ph)) -> ~(((~(ta -> ch) -> t
 theorem _ (ph ps ch: wff): $ ~((~~((~~((ph -> ps) -> ~(ps -> ph)) -> ch) -> ~(ch -> ~~((ph -> ps) -> ~(ps -> ph)))) -> ~~(ph -> ~~((ps -> ch) -> ~(ch -> ps))) -> ~(~ph -> ~~~((ps -> ch) -> ~(ch -> ps))))
 -> ~((~~(ph -> ~~((ps -> ch) -> ~(ch -> ps))) -> ~(~ph -> ~~~((ps -> ch) -> ~(ch -> ps)))) -> ~~((~~((ph -> ps) -> ~(ps -> ph)) -> ch) -> ~(ch -> ~~((ph -> ps) -> ~(ps -> ph)))))) $= tauto;
 
--- Theorems from set.mm 
+-- Theorems from set.mm
 pub theorem _id (ph: wff): $ ph -> ph $= tauto;
 pub theorem _idd (ph ps: wff): $ ph -> ps -> ps $= tauto;
 pub theorem _2a1 (ph ps ch: wff): $ ph -> ps -> ch -> ph $= tauto;
